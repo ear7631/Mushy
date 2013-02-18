@@ -13,10 +13,7 @@ def parseLine(line, entity):
     line = line.strip()
     tokens = line.split(" ")
     args = CommandArgs(name=tokens[0], tokens=tokens, full=line, actor=entity)
-
-    # check to see if the command exists as a common command
-    if tokens[0] in functionmapper.commandFunctions:
-        queueCommand(args)
+    queueCommand(args)
 
 
 def queueCommand(args):
@@ -44,6 +41,8 @@ def dispatchForever():
         else:
             # get the next command in the queue and execute it
             args = commandsToExecute.pop()
+
+            args = functionmapper.shorthandHandler(args)
             command = args[0]
 
             if command in functionmapper.commandFunctions:

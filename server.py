@@ -5,6 +5,8 @@ import commandparser
 import threading
 import entity
 
+from colorer import colorfy
+
 
 class LoginProxy(threading.Thread):
 
@@ -49,18 +51,19 @@ class LoginProxy(threading.Thread):
             username = ""
             self.socket.send("-- Welcome to Mushy --\n")
             while len(username) < 1:
-                self.socket.send("What is your username?\n")
+                self.socket.send("What will you use for a name?\n")
                 username = self.socket.recv(4096).strip()
                 self.socket.send("\n")
                 # validate username
                 if len(username) < 1:
                     self.socket.send("Choose a REAL name!\n")
 
+            username = username[0].upper() + username[1:]
             online = self.checkIfOnline(username)
             if online:
                 done = False
                 while not done:
-                    self.socket.send("Another instance of you is already connected. Do you want to disconnect it? (y/n)\n")
+                    self.socket.send("Another instance of you is already connected. Do you want to take its place? (y/n)\n")
                     choice = self.socket.recv(4096).strip()
 
                     if choice.lower() == 'y':
@@ -77,6 +80,12 @@ class LoginProxy(threading.Thread):
                 self.connections.append(player)
                 player.proxy.start()
 
+                for e in self.connections:
+                    if e == player:
+                        player.sendMessage(colorfy("You have joined the session.", "bright yellow"))
+                    else:
+                        e.sendMessage(colorfy("[SERVER] " + player.name + " has joined the session.", "bright yellow"))
+
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             traceback.print_exception(exc_type, exc_value, exc_traceback, limit=None, file=sys.stdout)
@@ -90,9 +99,9 @@ def main():
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server_socket.bind(('', 8888))
+    server_socket.bind(('', 8080))
     server_socket.listen(0)
-    print "Server: Listening on port 8888, press control+C to exit."
+    print "Server: Listening on port 8080, press control+C to exit."
 
     commandparser.startDispatching()
     print "Server: Done."
