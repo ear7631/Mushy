@@ -20,6 +20,10 @@ if len(commandFunctions) == 0:
     commandFunctions["status"] = (commands.status)
     commandFunctions["glance"] = (commands.glance)
     commandFunctions["colors"] = (commands.colors)
+    commandFunctions["paint"] = (commands.paint)
+    commandFunctions["erase"] = (commands.erase)
+    commandFunctions["wipe"] = (commands.wipe)
+    commandFunctions["look"] = (commands.look)
 
 
 def shorthandHandler(args):

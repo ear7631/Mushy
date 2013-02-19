@@ -6,12 +6,12 @@ import commandparser
 
 
 class Entity(object):
-    def __init__(self, proxy, name, connections):
+    def __init__(self, proxy, name, instance):
         self.proxy = proxy
         if self.proxy != None:
             self.proxy.setEntity(self)
         self.name = name
-        self.connections = connections
+        self.instance = instance
         self.dm = False
         self.status = ""
 

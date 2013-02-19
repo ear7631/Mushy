@@ -4,17 +4,18 @@ import socket
 import commandparser
 import threading
 import entity
+import session
 
 from colorer import colorfy
 
 
 class LoginProxy(threading.Thread):
 
-    def __init__(self, socket, connections):
+    def __init__(self, socket, instance):
         threading.Thread.__init__(self)
         self.socket = socket
         self.running = False
-        self.connections = connections
+        self.instance = instance
 
     def setEntity(self, entity):
         self.entity = entity
@@ -28,17 +29,17 @@ class LoginProxy(threading.Thread):
             pass
 
     def killClone(self, username):
-        for user in self.connections:
+        for user in self.instance.connections:
             if not isinstance(user, entity.Entity):
                 continue
             if username == user.name and user.proxy.running:
                 user.proxy.kill()
-                self.connections.remove(user)
+                self.instance.connections.remove(user)
                 return
         return
 
     def checkIfOnline(self, username):
-        for user in self.connections:
+        for user in self.instance.connections:
             if not isinstance(user, entity.Entity):
                 continue
             if username == user.name and user.proxy.running:
@@ -77,7 +78,7 @@ class LoginProxy(threading.Thread):
                         done = True
 
             if not online:
-                self.socket.send("Are you the DM for the group? (y if yes)")
+                self.socket.send("Are you the DM for the group (y if yes)? ")
                 choice = self.socket.recv(4096).strip()
 
                 dm = False
@@ -85,15 +86,15 @@ class LoginProxy(threading.Thread):
                     dm = True
 
                 proxy = entity.ClientProxy(self.socket)
-                player = entity.Entity(proxy, username, self.connections)
+                player = entity.Entity(proxy, username, self.instance)
 
                 if dm:
                     player.dm = True
 
-                self.connections.append(player)
+                self.instance.connections.append(player)
                 player.proxy.start()
 
-                for e in self.connections:
+                for e in self.instance.connections:
                     if e == player:
                         player.sendMessage(colorfy("[SERVER] You have joined the session.", "bright yellow"))
                     else:
@@ -110,6 +111,7 @@ class LoginProxy(threading.Thread):
 
 def main():
     connections = []
+    instance = session.Instance(connections)
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -126,7 +128,7 @@ def main():
             client_socket, address = server_socket.accept()
             print "Server: Accepting connection from " + address[0] + "..."
             # spawn up a client proxy here
-            proxy = LoginProxy(client_socket, connections)
+            proxy = LoginProxy(client_socket, instance)
             proxy.start()
         except KeyboardInterrupt:
             print ""
@@ -134,7 +136,7 @@ def main():
             server_socket.close()
             commandparser.stopDispatching()
             print "Server: Closing client connections..."
-            for connection in connections:
+            for connection in instance.connections:
                 if connection.proxy.running:
                     connection.proxy.kill()
             done = True

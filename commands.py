@@ -4,6 +4,7 @@ import random
 import namedtuple
 import functionmapper
 import entity
+from colorer import colors as swatch
 from colorer import colorfy
 
 CommandArgs = namedtuple.namedtuple('CommandArgs', 'name tokens full actor')
@@ -139,7 +140,7 @@ def say(args):
         msg = msg + '.'
 
     marking = colorfy(marking, 'yellow')
-    for e in args.actor.connections:
+    for e in args.actor.instance.connections:
         if e == args.actor:
             e.sendMessage(marking + colorfy('You say, "' + msg + '"', "white"))
         else:
@@ -161,7 +162,7 @@ def pm(args):
     if not len(args.tokens) >= 3:
         return False
 
-    for e in args.actor.connections:
+    for e in args.actor.instance.connections:
         if e.name.lower() == args.tokens[1].lower():
             e.sendMessage(colorfy("[" + args.actor.name + ">>] " +
                           args.full[len(args.tokens[0] + " " + args.tokens[1] + " "):], 'purple'))
@@ -238,7 +239,7 @@ def whisper(args):
 
     marking = colorfy(marking, 'yellow')
 
-    for e in args.actor.connections:
+    for e in args.actor.instance.connections:
         if e == args.actor:
             e.sendMessage(marking + colorfy('You whisper, "' + msg + '"', "dark gray"))
         else:
@@ -254,7 +255,7 @@ def who(args):
     syntax: who
     """
     msg = colorfy("Currently connected players:\n", "bright blue")
-    for e in args.actor.connections:
+    for e in args.actor.instance.connections:
         name = colorfy(e.name, "bright blue")
         if e.dm:
             name = name + colorfy(" (DM)", "bright red")
@@ -269,14 +270,14 @@ def logout(args):
 
     syntax: logout
     """
-    for e in args.actor.connections:
+    for e in args.actor.instance.connections:
         if e == args.actor:
             args.actor.sendMessage(colorfy("[SERVER] You have quit the session.", "bright yellow"))
         else:
             e.sendMessage(colorfy("[SERVER] " + args.actor.name + " has quit the session.", "bright yellow"))
     try:
         args.actor.proxy.running = False
-        args.actor.connections.remove(args.actor)
+        args.actor.instance.connections.remove(args.actor)
         args.actor.proxy.kill()
     except:
         return True
@@ -316,7 +317,7 @@ def emote(args):
 
     rest = rest.replace(';', args.actor.name)
 
-    for e in args.actor.connections:
+    for e in args.actor.instance.connections:
         e.sendMessage(colorfy(marking + rest, "dark gray"))
 
     return True
@@ -352,7 +353,7 @@ def ooc(args):
 
     rest = args.full[len(args.name + " "):]
 
-    for e in args.actor.connections:
+    for e in args.actor.instance.connections:
         e.sendMessage(marking + rest)
 
     return True
@@ -413,7 +414,7 @@ def roll(args):
     for i in range(num):
         dice.append(random.randint(1, sides))
 
-    for e in args.actor.connections:
+    for e in args.actor.instance.connections:
         e.sendMessage(marking + args.actor.name + " rolls " + str(num) + "d" + str(sides) + ".")
         for die in dice:
             e.sendMessage("  " + str(die))
@@ -452,7 +453,7 @@ def mask(args):
         args.actor.sendMessage("Whoa there... This is a DM power! Bad!")
         return True
 
-    husk = entity.Entity(None, args.tokens[1][0].upper() + args.tokens[1][1:], args.actor.connections)
+    husk = entity.Entity(None, args.tokens[1][0].upper() + args.tokens[1][1:], args.actor.instance.connections)
     new_name = args.tokens[2]
     new_tokens = args.tokens[2:]
     new_full = args.full[len(args.tokens[0] + " " + args.tokens[1] + " "):]
@@ -502,7 +503,11 @@ def display(args):
     if args.tokens[1] == '-c':
         if len(args.tokens) < 4:
             return False
+
         color = args.tokens[2].lower()
+        if not color in swatch:
+            return False
+
         rest = args.full[len(args.tokens[0] + " " + args.tokens[1] + " " + args.tokens[2] + " "):]
 
         if args.tokens[3] == '-t':
@@ -510,7 +515,7 @@ def display(args):
                 return False
             target_name = args.tokens[4]
 
-            for e in args.actor.connections:
+            for e in args.actor.instance.connections:
                 if e.name.lower() == target_name.lower():
                     target = e
 
@@ -525,7 +530,7 @@ def display(args):
     if target != None:
         target.sendMessage(rest)
     else:
-        for e in args.actor.connections:
+        for e in args.actor.instance.connections:
             e.sendMessage(rest)
 
     return True
@@ -549,7 +554,7 @@ def status(args):
         status Limping behind the group, using his staff as a cane.
         >> Eitan is limping behind the group, using his staff as a cane.
 
-        >> examine Eitan
+        >> glance Eitan
         >> Eitan is limping behind the group, using his staff as a cane.
 
         >> status clear
@@ -559,6 +564,7 @@ def status(args):
 
     if args.tokens[1] == 'clear':
         args.actor.status = ""
+        args.actor.sendMessage("You've cleared your status.")
         return True
 
     status = args.full[len(args.tokens[0] + " "):]
@@ -570,7 +576,7 @@ def status(args):
 
     status = status[0].lower() + status[1:]
 
-    for e in args.actor.connections:
+    for e in args.actor.instance.connections:
         if e == args.actor:
             e.sendMessage(colorfy(">You are " + status, "dark gray"))
         else:
@@ -589,11 +595,16 @@ def glance(args):
     if len(args.tokens) < 2:
         return False
 
-    for e in args.actor.connections:
-        if e.name.lower() == args.tokens[1].lower() and e.status != "":
+    for e in args.actor.instance.connections:
+        if e.name.lower() == args.tokens[1].lower():
+            args.actor.sendMessage("You glance at " + e.name + ".")
+            if e.status == "":
+                return True
             status = e.status[0].lower() + e.status[1:]
-            args.actor.sendMessage(e.name + " is " + colorfy(status, "dark gray"))
+            args.actor.sendMessage("  " + e.name + " is " + colorfy(status, "dark gray"))
+            return True
 
+    args.actor.sendMessage('There is no player "' + args.tokens[1] + '" here.')
     return True
 
 
@@ -624,4 +635,157 @@ def colors(args):
         \033[1;35mBPURPLE\033[0m
     """
     args.actor.sendMessage(msg)
+    return True
+
+
+def paint(args):
+    """
+    A DM may "paint" items of interest into the session area. Three things
+    may be painted in a color of their choosing:
+        "Scene" title - The name of where you are
+        "Scene" body - The description of where you are
+        "Object" - A particular item of interest that can be looked at
+
+    Players may look at the scene by using the "look" command with no
+    arguments. Players may also look at an object by specifying the
+    object tag.
+
+    syntax: paint [-c color] <title|body> <description>
+            paint [-c color] <object> <tag> <description>
+
+            color - the color which you want the text to display in
+            description - what the thing looks like
+            tag - the identifier to use when "looking" at an object
+
+    To view a list of colors, type "colors".
+
+    example:
+        paint -c BRED title Inferno Cave
+        paint body Lava swirls around burning stone in a river of red.
+        paint -c RED object flame A pillar of flame burns
+                                             in the center of the cave.
+    """
+    if len(args.tokens) < 3:
+        return False
+
+    if not args.actor.dm:
+        return False
+
+    color = ""
+    tokens = args.tokens
+    snipped = 0
+
+    if tokens[1] == '-c':
+        if len(tokens) < 5:
+            return False
+
+        color = tokens[2].lower()
+        if not color in swatch:
+            return False
+
+        snipped = len(tokens[1] + " " + tokens[2] + " ")
+        tokens = [tokens[0]] + tokens[3:]
+    else:
+        color = "default"
+
+    if tokens[1] == "title":
+        args.actor.instance.paintSceneTitle(colorfy(args.full[snipped + len(tokens[0] + " " + tokens[1] + " "):], color))
+        for e in args.actor.instance.connections:
+            e.sendMessage(colorfy(args.actor.name + " paints a scene.", "bright red"))
+
+    elif tokens[1] == "body":
+        args.actor.instance.paintSceneBody(colorfy(args.full[snipped + len(tokens[0] + " " + tokens[1] + " "):], color))
+        for e in args.actor.instance.connections:
+            e.sendMessage(colorfy(args.actor.name + " paints a scene.", "bright red"))
+
+    elif tokens[1] == "object":
+        if len(tokens) < 4:
+            return False
+        args.actor.instance.paintObject(tokens[2], colorfy(args.full[snipped + len(tokens[0] + " " + tokens[1] + " " + tokens[2] + " "):], color))
+        for e in args.actor.instance.connections:
+            e.sendMessage(colorfy(args.actor.name + " paints a " + tokens[2] + ".", "bright red"))
+
+    else:
+        return False
+
+    return True
+
+
+def erase(args):
+    """
+    A DM may erase a painted part of the scene, or a painted object.
+
+    syntax: erase scene
+            erase object <tag>
+
+            tag - the identifier to use when "looking" at an object
+
+    To view a list of objects in the scene, simply use the look command.
+    """
+    if len(args.tokens) < 2:
+        return False
+
+    if not args.actor.dm:
+        return False
+
+    if args.tokens[1] == "scene":
+        args.actor.instance.wipeScene()
+        for e in args.actor.instance.connections:
+            e.sendMessage(colorfy(args.actor.name + " erases the scene.", "bright red"))
+
+    elif args.tokens[1] == "object":
+        if len(args.tokens) < 3:
+            return False
+
+        if args.tokens[2].lower() in args.actor.instance.objects:
+            args.actor.instance.eraseObject(args.tokens[2])
+            for e in args.actor.instance.connections:
+                e.sendMessage(colorfy(args.actor.name + " erases the " + args.tokens[2] + ".", "bright red"))
+
+    else:
+        return False
+
+    return True
+
+
+def wipe(args):
+    """
+    A DM may wipe an entire scene and all objects painted in it.
+
+    syntax: wipe
+    """
+    if not args.actor.dm:
+        return False
+
+    args.actor.instance.wipeScene()
+    args.actor.instance.wipeObjects()
+
+    for e in args.actor.instance.connections:
+        e.sendMessage(colorfy(args.actor.name + " wipes the whole scene.", "bright red"))
+
+    return True
+
+
+def look(args):
+    """
+    Allows a player to look at a scene, or a particular painted object.
+
+    syntax: look [tag]
+            tag - the identifier to use when "looking" at an object
+
+    To view a list of objects in the scene, simply use look without arguments.
+    """
+    if len(args.tokens) == 1:
+        scene = args.actor.instance.viewScene()
+        if scene == "":
+            args.actor.sendMessage("The scene is blank.")
+        else:
+            args.actor.sendMessage(scene)
+        return True
+
+    description = args.actor.instance.viewObject(args.tokens[1])
+    if description == "":
+        args.actor.sendMessage('There is no "' + args.tokens[1] + '" in the scene.')
+    else:
+        args.actor.sendMessage(description)
     return True
