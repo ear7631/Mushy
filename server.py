@@ -50,13 +50,15 @@ class LoginProxy(threading.Thread):
             self.running = True
             username = ""
             self.socket.send("-- Welcome to Mushy --\n")
-            while len(username) < 1:
+            while len(username) < 1 and len(username.split()) == 1:
                 self.socket.send("What will you use for a name?\n")
                 username = self.socket.recv(4096).strip()
                 self.socket.send("\n")
                 # validate username
                 if len(username) < 1:
                     self.socket.send("Choose a REAL name!\n")
+                if len(username.split()) > 1:
+                    self.socket.send("Only use your first name!\n")
 
             username = username[0].upper() + username[1:]
             online = self.checkIfOnline(username)
@@ -75,8 +77,19 @@ class LoginProxy(threading.Thread):
                         done = True
 
             if not online:
+                self.socket.send("Are you the DM for the group? (y if yes)")
+                choice = self.socket.recv(4096).strip()
+
+                dm = False
+                if choice.lower() == 'y':
+                    dm = True
+
                 proxy = entity.ClientProxy(self.socket)
                 player = entity.Entity(proxy, username, self.connections)
+
+                if dm:
+                    player.dm = True
+
                 self.connections.append(player)
                 player.proxy.start()
 

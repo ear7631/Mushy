@@ -15,6 +15,8 @@ if len(commandFunctions) == 0:
     commandFunctions["emote"] = (commands.emote)
     commandFunctions["ooc"] = (commands.ooc)
     commandFunctions["roll"] = (commands.roll)
+    commandFunctions["display"] = (commands.display)
+    commandFunctions["mask"] = (commands.mask)
 
 
 def shorthandHandler(args):
@@ -52,6 +54,22 @@ def shorthandHandler(args):
         new_name = "roll"
         new_tokens = ["roll", args.tokens[0][1:]]
         new_full = "roll " + args.full[1:]
+
+        newargs = CommandArgs(name=new_name, tokens=new_tokens, full=new_full, actor=args.actor)
+        return newargs
+
+    elif args.name[0] == "$":
+        new_name = "mask"
+        new_tokens = ["mask", args.tokens[0][1:]] + args.tokens[1:]
+        new_full = "mask " + args.full[1:]
+
+        newargs = CommandArgs(name=new_name, tokens=new_tokens, full=new_full, actor=args.actor)
+        return newargs
+
+    elif args.name[0] == "@":
+        new_name = "display"
+        new_tokens = ["display", "-c", args.tokens[0][1:]] + args.tokens[1:]
+        new_full = "display -c " + args.full[1:]
 
         newargs = CommandArgs(name=new_name, tokens=new_tokens, full=new_full, actor=args.actor)
         return newargs

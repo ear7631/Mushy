@@ -12,6 +12,7 @@ class Entity(object):
             self.proxy.setEntity(self)
         self.name = name
         self.connections = connections
+        self.dm = False
 
     def sendMessage(self, message):
         if(self.proxy != None):

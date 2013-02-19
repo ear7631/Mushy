@@ -1,7 +1,12 @@
 import sys
 import inspect
 import random
+import namedtuple
+import commandparser
+import entity
 from colorer import colorfy
+
+CommandArgs = namedtuple.namedtuple('CommandArgs', 'name tokens full actor')
 
 """
 General, universal commands are defined here.
@@ -23,7 +28,7 @@ def help(args):
     """
     Check these helpfiles for something.
     syntax: help <subject>
-            subject - the subject or command which you want to check for help on
+            subject - the subject or command which you want to check for help
     """
     if len(args.tokens) < 2:
         return False
@@ -47,7 +52,9 @@ def help(args):
 
 def say(args):
     """
-    Say something out loud, in character. Unless otherwise specified, things are said in common.
+    Say something out loud, in character. Unless otherwise specified, things
+    are said in common.
+
     syntax: say [-l <language>] [-t <target>] <message>
             language - specific language to speak in
             target - specific target to speak to
@@ -129,8 +136,10 @@ def say(args):
 
 def pm(args):
     """
-    Give a private message to someone, out of character. Other people cannot see these messages.
+    Give a private message to someone, out of character. Other people
+    cannot see these messages.
     Note: This is OOC and shouldn't be abused!
+
     syntax: pm <player> <message>
             player - target of the pm
             message - what you would like to say privately
@@ -150,6 +159,7 @@ def pm(args):
 def whisper(args):
     """
     Say something out loud, in character.
+
     syntax: whisper [-l <language>] [-t <target>] <message>
             language - specific language to speak in
             target - specific target to speak to
@@ -226,12 +236,15 @@ def whisper(args):
 def who(args):
     """
     See who is connected to the MUSH server.
+
     syntax: who
     """
-    msg = "Currently connected players:\n"
+    msg = colorfy("Currently connected players:\n", "bright blue")
     for e in args.actor.connections:
-        msg = msg + "    " + e.name + "\n"
-    msg = colorfy(msg, "bright blue")
+        name = colorfy(e.name, "bright blue")
+        if e.dm:
+            name = name + colorfy(" (DM)", "bright red")
+        msg = msg + "    " + name + "\n"
     args.actor.sendMessage(msg)
     return True
 
@@ -239,6 +252,7 @@ def who(args):
 def logout(args):
     """
     Logs you out of the game.
+
     syntax: logout
     """
     for e in args.actor.connections:
@@ -258,6 +272,7 @@ def logout(args):
 def emote(args):
     """
     Perform an emote. Use the ";" token as a placeholder for your name.
+
     syntax: emote <description containing ; somewhere>
 
     example:
@@ -268,7 +283,8 @@ def emote(args):
         >> Smoke drifts upwards from a pipe held between ;'s lips.'
 
 
-    Alternatively, as a shorthand, you may start an emote with the ";" token (no space).
+    Alternatively, as a shorthand, you may start an emote with the ";" token
+    (no space).
 
     example:
         ;laughs heartedly.
@@ -295,6 +311,7 @@ def emote(args):
 def ooc(args):
     """
     Broadcast out of character text. Anything said here is OOC.
+
     syntax: ooc <message>
 
     example:
@@ -302,17 +319,21 @@ def ooc(args):
         >> [OOC Justin]: Do I need to use a 1d6 or 1d8 for that, DM?
 
 
-    Alternatively, as a shorthand, you may start an ooc message with the "*" token (no space).
+    Alternatively, as a shorthand, you may start an ooc message with the
+    "*" token (no space).
 
     example:
-        *If you keep metagaming, Justin, I'm going to rip you a new one!
-        >> [OOC DM_Eitan]: If you keep metagaming, Justin, I'm going to rip you a new one!
+        *If you keep metagaming, I'm going to rip you a new one!
+        >> [OOC DM_Eitan]: If you keep metagaming, I'm going to kill you!
     """
 
     if len(args.tokens) < 2:
         return False
 
-    marking = "[OOC " + args.actor.name + "]: "
+    name = args.actor.name
+    if args.actor.dm:
+        name = name + " (DM)"
+    marking = "[OOC " + name + "]: "
     marking = colorfy(marking, "bright red")
 
     rest = args.full[len(args.name + " "):]
@@ -326,6 +347,7 @@ def ooc(args):
 def roll(args):
     """
     Roll a dice of a specified number of sides. The dice roll is public.
+
     syntax: roll [-p <purpose>] [-n <quantity>] <sides>
 
     example:
@@ -339,7 +361,8 @@ def roll(args):
         >>  5
 
 
-    Alternatively, as a shorthand, you may roll a single dice of N sides with the "3" token (no space).
+    Alternatively, as a shorthand, you may roll a single dice of N sides
+    with the "3" token (no space).
 
     example:
         #20
@@ -403,5 +426,106 @@ def roll(args):
         e.sendMessage(marking + args.actor.name + " rolls " + str(num) + "d" + str(sides) + ".")
         for die in dice:
             e.sendMessage("  " + str(die))
+
+    return True
+
+
+def mask(args):
+    """
+    Mask a command as if you were another character. Don't abuse this, DM!
+
+    syntax: mask <name> <command>
+            name - the name of the entity you wish to do something as
+            command - the regular command string as if you were entering it
+                      as normal
+
+    example:
+        mask King say Welcome, my subjects, to my domain!
+        >> King says, "Welcome, my subjects, to my domain!"
+
+        mask John ;bows with a flourish.
+        >> John bows with a flourish.
+
+    Alternatively, as a shorthand, you may mask as another person by using
+    the "$" token (no space).
+
+    example:
+        $Nameless say Who... who am I?
+        >> Nameless says, "Who... who am I?"
+    """
+
+    if len(args) < 3:
+        return False
+
+    if not args.actor.dm:
+        args.actor.sendMessage("Whoa there... This is a DM power! Bad!")
+        return True
+
+    husk = entity.Entity(None, args.tokens[1][0].upper() + args.tokens[1][1:], args.actor.connections)
+    new_name = args.tokens[2]
+    new_tokens = args.tokens[2:]
+    new_full = args.full[len(args.tokens[0] + " " + args.tokens[1] + " "):]
+    new_args = CommandArgs(name=new_name, tokens=new_tokens, full=new_full, actor=husk)
+
+    commandparser.queueCommand(new_args)
+    return True
+
+
+def display(args):
+    """
+    Display text in a color of your choosing without any "tags". Basically, use
+    this as an immersion tool for typing descriptions.
+
+    syntax: display [-c color] <text>
+            color - the color which you want the text to display in
+            text - the text to display
+
+    List of colors:
+        \033[1;34mDEFAULT\033[0m
+        \033[1;37mWHITE\033[0m
+        \033[0;37mBGRAY\033[0m
+        \033[1;30mDGRAY\033[0m
+        \033[0;30mBLACK\033[0m
+        \033[0;34mBLUE\033[0m
+        \033[1;34mBBLUE\033[0m
+        \033[0;36mCYAN\033[0m
+        \033[1;36mBCYAN\033[0m
+        \033[0;32mGREEN\033[0m
+        \033[1;32mBGREEN\033[0m
+        \033[0;33mYELLOW\033[0m
+        \033[1;33mBYELLOW\033[0m
+        \033[0;31mRED\033[0m
+        \033[1;31mBRED\033[0m
+        \033[0;35mPURPLE\033[0m
+        \033[1;35mBPURPLE\033[0m
+
+    example:
+        display -c BRED The flame licks at the prisoner's cheek.
+        >> \033[1;31mThe flame licks at the prisoner's cheek.\033[0m
+
+    Alternatively, as a shorthand, you may display text using the "@" token
+    (no space). By doing this, the first argument is the color itself.
+
+    example:
+        @RED Blood trickles down the victim's nose.
+        >> \033[0;31mBlood trickles down the victim's nose.\033[0m
+    """
+
+    if len(args.tokens) < 2:
+        return False
+
+    color = "default"
+    if args.tokens[1] == '-c':
+        if len(args.tokens) < 4:
+            return False
+        color = args.tokens[2].lower()
+        rest = args.full[len(args.tokens[0] + " " + args.tokens[1] + " " + args.tokens[2] + " "):]
+    else:
+        rest = args.full[len(args.tokens[0] + " "):]
+
+    rest = colorfy(rest, color)
+
+    for e in args.actor.connections:
+        e.sendMessage(rest)
 
     return True

@@ -7,6 +7,9 @@ colors = {
     'purple': '0;35', 'bright red': '1;31',
     'yellow': '0;33', 'bright purple': '1;35',
     'dark gray': '1;30', 'bright yellow': '1;33',
+    'dgray': '1;30', 'bgray': '0;37', 'bblue': '1;34',
+    'bgreen': '1;32', 'bcyan': '1;36', 'bred': '1;31',
+    'bpurple': '1;35', 'byellow': '1;33', 'default': '0',
     'normal': '0'
 }
 
