@@ -137,8 +137,7 @@ def main():
             commandparser.stopDispatching()
             print "Server: Closing client connections..."
             for connection in instance.connections:
-                if connection.proxy.running:
-                    connection.proxy.kill()
+                connection.proxy.kill()
             done = True
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()

@@ -21,6 +21,7 @@ class Entity(object):
                 self.proxy.socket.send(message + "\n")
             except:
                 print "Server: Exception thrown while sending " + self.name + " a message."
+                self.proxy.kill()
 
 
 class ClientProxy(threading.Thread):
