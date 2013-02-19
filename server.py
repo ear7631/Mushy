@@ -95,16 +95,17 @@ class LoginProxy(threading.Thread):
 
                 for e in self.connections:
                     if e == player:
-                        player.sendMessage(colorfy("You have joined the session.", "bright yellow"))
+                        player.sendMessage(colorfy("[SERVER] You have joined the session.", "bright yellow"))
                     else:
                         e.sendMessage(colorfy("[SERVER] " + player.name + " has joined the session.", "bright yellow"))
 
+                player.sendMessage(colorfy("[SERVER] You may type 'help' at any time for a list of commands.", 'bright green'))
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             traceback.print_exception(exc_type, exc_value, exc_traceback, limit=None, file=sys.stdout)
             self.running = False
             self.socket.close()
-            print "Client connection closed"
+            print "Server: Client connection closed. Exception during login."
 
 
 def main():

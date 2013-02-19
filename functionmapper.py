@@ -55,8 +55,8 @@ def shorthandHandler(args):
 
     elif args.name[0] == "#":
         new_name = "roll"
-        new_tokens = ["roll", args.tokens[0][1:]]
-        new_full = "roll " + args.full[1:]
+        new_tokens = ["roll", '1d' + args.tokens[0][1:]]
+        new_full = "roll 1d" + args.tokens[0][1:]
 
         newargs = CommandArgs(name=new_name, tokens=new_tokens, full=new_full, actor=args.actor)
         return newargs

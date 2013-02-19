@@ -2,7 +2,7 @@ import sys
 import inspect
 import random
 import namedtuple
-import commandparser
+import functionmapper
 import entity
 from colorer import colorfy
 
@@ -30,8 +30,22 @@ def help(args):
     syntax: help <subject>
             subject - the subject or command which you want to check for help
     """
-    if len(args.tokens) < 2:
-        return False
+    if len(args.tokens) == 1:
+        commands = functionmapper.commandFunctions.keys()
+        commands.sort()
+
+        msg = "    "
+        i = 0
+        for command in commands:
+            msg = msg + command + (' ' * (15 - len(command)))
+            i = (i + 1) % 4
+            if i == 0:
+                msg = msg + "\n    "
+
+        args.actor.sendMessage("There are help files on the following commands.\nType help <command> for details.")
+        args.actor.sendMessage(msg)
+
+        return True
 
     helpFunctionName = args.tokens[1]
     functions = inspect.getmembers(sys.modules[__name__], inspect.isfunction)
@@ -348,21 +362,21 @@ def roll(args):
     """
     Roll a dice of a specified number of sides. The dice roll is public.
 
-    syntax: roll [-p <purpose>] [-n <quantity>] <sides>
+    syntax: roll <number>d<sides> [reason]
 
     example:
-        roll 20
+        roll 1d20
         >>[DICE] DM_Eitan rolls 1d20.
         >>  18
 
-        roll -p damage -n 2 6
+        roll 2d6 damage
         >>[DICE (damage)] Justin rolls 2d6.
         >>  3
         >>  5
 
 
-    Alternatively, as a shorthand, you may roll a single dice of N sides
-    with the "3" token (no space).
+    Alternatively, as a shorthand, you may roll a single die of N sides
+    with no specified purpose with the "#" token (no space).
 
     example:
         #20
@@ -377,40 +391,17 @@ def roll(args):
     sides = 0
     purpose = ""
 
-    if len(args.tokens) == 2:
-        num = 1
-        try:
-            sides = int(args.tokens[1])
-        except:
-            return False
-    else:
-        if args.tokens[1] == "-p":
-            if not len(args.tokens) >= 4:
-                return False
-            purpose = args.tokens[2]
+    dice = args.tokens[1].split('d')
+    if len(dice) != 2:
+        return False
 
-            if args.tokens[3] == '-n':
-                if not len(args.tokens) >= 6:
-                    return False
-                try:
-                    num = int(args.tokens[4])
-                except:
-                    return False
-            else:
-                num = 1
+    try:
+        num = int(dice[0])
+        sides = int(dice[1])
+    except:
+        return False
 
-        if args.tokens[1] == "-n":
-            if not len(args.tokens) >= 4:
-                return False
-            try:
-                num = int(args.tokens[2])
-            except:
-                return False
-
-        try:
-            sides = int(args.tokens[-1])
-        except:
-            return False
+    purpose = args.full[len(args.tokens[0] + " " + args.tokens[1] + " "):]
 
     marking = "[DICE"
     if purpose != "":
