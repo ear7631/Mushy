@@ -257,9 +257,9 @@ def logout(args):
     """
     for e in args.actor.connections:
         if e == args.actor:
-            args.actor.sendMessage(colorfy("You have quit the session.", "red"))
+            args.actor.sendMessage(colorfy("[SERVER] You have quit the session.", "bright yellow"))
         else:
-            e.sendMessage(colorfy(args.actor.name + " has quit the session.", "red"))
+            e.sendMessage(colorfy("[SERVER] " + args.actor.name + " has quit the session.", "bright yellow"))
     try:
         args.actor.proxy.running = False
         args.actor.connections.remove(args.actor)
