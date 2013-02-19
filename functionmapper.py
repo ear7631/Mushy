@@ -17,6 +17,9 @@ if len(commandFunctions) == 0:
     commandFunctions["roll"] = (commands.roll)
     commandFunctions["display"] = (commands.display)
     commandFunctions["mask"] = (commands.mask)
+    commandFunctions["status"] = (commands.status)
+    commandFunctions["glance"] = (commands.glance)
+    commandFunctions["colors"] = (commands.colors)
 
 
 def shorthandHandler(args):

@@ -13,10 +13,14 @@ class Entity(object):
         self.name = name
         self.connections = connections
         self.dm = False
+        self.status = ""
 
     def sendMessage(self, message):
         if(self.proxy != None):
-            self.proxy.socket.send(message + "\n")
+            try:
+                self.proxy.socket.send(message + "\n")
+            except:
+                print "Server: Exception thrown while sending " + self.name + " a message."
 
 
 class ClientProxy(threading.Thread):

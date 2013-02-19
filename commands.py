@@ -476,11 +476,144 @@ def display(args):
     Display text in a color of your choosing without any "tags". Basically, use
     this as an immersion tool for typing descriptions.
 
-    syntax: display [-c color] <text>
+    The DM may want to display text to only a particular player, and not want
+    the rest of the group to be aware OOCly, allowing for better roleplay.
+
+    syntax: display [-c color] [-t target] <text>
             color - the color which you want the text to display in
+            target - the target of the text
             text - the text to display
 
-    List of colors:
+    To view a list of colors, type "colors".
+
+    example:
+        display -c BRED The flame licks at the prisoner's cheek.
+        >> \033[1;31mThe flame licks at the prisoner's cheek.\033[0m
+
+        display -c YELLOW -t Justin Spiritual voices wail in your mind...
+        >> \033[0;33mSpiritual voices wail in your mind...\033[0m
+
+
+    Alternatively, as a shorthand, you may display text using the "@" token
+    (no space). By doing this, the first argument is the color itself, and
+    no target is specified.
+
+    example:
+        @RED Blood trickles down the victim's nose.
+        >> \033[0;31mBlood trickles down the victim's nose.\033[0m
+    """
+
+    if len(args.tokens) < 2:
+        return False
+
+    color = "default"
+    target = None
+    if args.tokens[1] == '-c':
+        if len(args.tokens) < 4:
+            return False
+        color = args.tokens[2].lower()
+        rest = args.full[len(args.tokens[0] + " " + args.tokens[1] + " " + args.tokens[2] + " "):]
+
+        if args.tokens[3] == '-t':
+            if len(args.tokens) < 6:
+                return False
+            target_name = args.tokens[4]
+
+            for e in args.actor.connections:
+                if e.name.lower() == target_name.lower():
+                    target = e
+
+            if target == None:
+                return False
+            rest = rest[len(args.tokens[3] + " " + args.tokens[4] + " "):]
+    else:
+        rest = args.full[len(args.tokens[0] + " "):]
+
+    rest = colorfy(rest, color)
+
+    if target != None:
+        target.sendMessage(rest)
+    else:
+        for e in args.actor.connections:
+            e.sendMessage(rest)
+
+    return True
+
+
+def status(args):
+    """
+    Set your status. This is meant to be an in-character roleplay tool. For
+    example, after being struck with an arrow, you may want to set your status
+    to indicate that you are injured. Treat these as an emoted "state".
+
+    Setting these is not quiet, and will indicate to the group what is going on
+    as an emote. Take care to phrase the status as a passive state. It sounds
+    best if you are able to say "Soandso is..." prior to a status.
+
+    If you specify status as "clear", it will clear your status silently.
+
+    syntax: status <status>
+
+    example:
+        status Limping behind the group, using his staff as a cane.
+        >> Eitan is limping behind the group, using his staff as a cane.
+
+        >> examine Eitan
+        >> Eitan is limping behind the group, using his staff as a cane.
+
+        >> status clear
+    """
+    if len(args.tokens) < 2:
+        return False
+
+    if args.tokens[1] == 'clear':
+        args.actor.status = ""
+        return True
+
+    status = args.full[len(args.tokens[0] + " "):]
+    status = status[0].upper() + status[1:]
+    if status[-1] not in (".", "!", "?"):
+        status = status + "."
+
+    args.actor.status = status
+
+    status = status[0].lower() + status[1:]
+
+    for e in args.actor.connections:
+        if e == args.actor:
+            e.sendMessage(colorfy(">You are " + status, "dark gray"))
+        else:
+            e.sendMessage(colorfy(">" + args.actor.name + " is " + status, "dark gray"))
+
+    return True
+
+
+def glance(args):
+    """
+    Glance at another player to see their set status.
+
+    syntax: glance <player>
+    """
+
+    if len(args.tokens) < 2:
+        return False
+
+    for e in args.actor.connections:
+        if e.name.lower() == args.tokens[1].lower() and e.status != "":
+            status = e.status[0].lower() + e.status[1:]
+            args.actor.sendMessage(e.name + " is " + colorfy(status, "dark gray"))
+
+    return True
+
+
+def colors(args):
+    """
+    Displays a list of the colors available for use in certain commands.
+
+    syntax: colors
+    """
+
+    msg = """    List of colors:
         \033[1;34mDEFAULT\033[0m
         \033[1;37mWHITE\033[0m
         \033[0;37mBGRAY\033[0m
@@ -498,34 +631,6 @@ def display(args):
         \033[1;31mBRED\033[0m
         \033[0;35mPURPLE\033[0m
         \033[1;35mBPURPLE\033[0m
-
-    example:
-        display -c BRED The flame licks at the prisoner's cheek.
-        >> \033[1;31mThe flame licks at the prisoner's cheek.\033[0m
-
-    Alternatively, as a shorthand, you may display text using the "@" token
-    (no space). By doing this, the first argument is the color itself.
-
-    example:
-        @RED Blood trickles down the victim's nose.
-        >> \033[0;31mBlood trickles down the victim's nose.\033[0m
     """
-
-    if len(args.tokens) < 2:
-        return False
-
-    color = "default"
-    if args.tokens[1] == '-c':
-        if len(args.tokens) < 4:
-            return False
-        color = args.tokens[2].lower()
-        rest = args.full[len(args.tokens[0] + " " + args.tokens[1] + " " + args.tokens[2] + " "):]
-    else:
-        rest = args.full[len(args.tokens[0] + " "):]
-
-    rest = colorfy(rest, color)
-
-    for e in args.actor.connections:
-        e.sendMessage(rest)
-
+    args.actor.sendMessage(msg)
     return True

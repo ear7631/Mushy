@@ -2,6 +2,7 @@ import functionmapper
 import threading
 import time
 import namedtuple
+import traceback
 
 CommandArgs = namedtuple.namedtuple('CommandArgs', 'name tokens full actor')
 commandsToExecute = []
@@ -46,9 +47,14 @@ def dispatchForever():
             command = args[0]
 
             if command in functionmapper.commandFunctions:
-                ret = functionmapper.commandFunctions[command](args)  # this calls the function
-                if not ret:
-                    args.actor.sendMessage("What?")
+                try:
+                    ret = functionmapper.commandFunctions[command](args)  # this calls the function
+                    if not ret:
+                        args.actor.sendMessage("What?")
+                except:
+                    print "Server: An error has occured."
+                    print "-----------------------------"
+                    print traceback.format_exc()
             else:
                 args.actor.sendMessage("What?")
 
