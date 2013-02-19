@@ -50,7 +50,7 @@ class LoginProxy(threading.Thread):
             self.running = True
             username = ""
             self.socket.send("-- Welcome to Mushy --\n")
-            while len(username) < 1 and len(username.split()) == 1:
+            while len(username) < 1 or len(username.split()) != 1:
                 self.socket.send("What will you use for a name?\n")
                 username = self.socket.recv(4096).strip()
                 self.socket.send("\n")

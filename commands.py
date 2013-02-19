@@ -259,7 +259,7 @@ def logout(args):
         if e == args.actor:
             args.actor.sendMessage(colorfy("You have quit the session.", "red"))
         else:
-            args.actor.sendMessage(colorfy(args.actor.name + " has quit the session.", "red"))
+            e.sendMessage(colorfy(args.actor.name + " has quit the session.", "red"))
     try:
         args.actor.proxy.running = False
         args.actor.connections.remove(args.actor)
@@ -454,7 +454,7 @@ def mask(args):
         >> Nameless says, "Who... who am I?"
     """
 
-    if len(args) < 3:
+    if len(args.tokens) < 3:
         return False
 
     if not args.actor.dm:
