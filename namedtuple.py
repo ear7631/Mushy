@@ -3,6 +3,7 @@ from operator import itemgetter as _itemgetter
 from keyword import iskeyword as _iskeyword
 import sys as _sys
 
+
 def namedtuple(typename, field_names, verbose=False, rename=False):
     """Returns a new subclass of tuple with named fields.
 
@@ -30,20 +31,20 @@ def namedtuple(typename, field_names, verbose=False, rename=False):
     # Parse and validate the field names.  Validation serves two purposes,
     # generating informative error messages and preventing template injection attacks.
     if isinstance(field_names, basestring):
-        field_names = field_names.replace(',', ' ').split() # names separated by whitespace and/or commas
+        field_names = field_names.replace(',', ' ').split()  # names separated by whitespace and/or commas
     field_names = tuple(map(str, field_names))
     if rename:
         names = list(field_names)
         seen = set()
         for i, name in enumerate(names):
-            if (not min(c.isalnum() or c=='_' for c in name) or _iskeyword(name)
+            if (not min(c.isalnum() or c == '_' for c in name) or _iskeyword(name)
                 or not name or name[0].isdigit() or name.startswith('_')
-                or name in seen):
+                    or name in seen):
                     names[i] = '_%d' % i
             seen.add(name)
         field_names = tuple(names)
     for name in (typename,) + field_names:
-        if not min(c.isalnum() or c=='_' for c in name):
+        if not min(c.isalnum() or c == '_' for c in name):
             raise ValueError('Type names and field names can only contain alphanumeric characters and underscores: %r' % name)
         if _iskeyword(name):
             raise ValueError('Type names and field names cannot be a keyword: %r' % name)

@@ -8,7 +8,7 @@ import commandparser
 class Entity(object):
     def __init__(self, proxy, name, instance):
         self.proxy = proxy
-        if self.proxy != None:
+        if self.proxy is not None:
             self.proxy.setEntity(self)
         self.name = name
         self.instance = instance
@@ -16,7 +16,7 @@ class Entity(object):
         self.status = ""
 
     def sendMessage(self, message):
-        if(self.proxy != None):
+        if(self.proxy is not None):
             try:
                 self.proxy.socket.send(message + "\n")
             except:
@@ -51,7 +51,7 @@ class ClientProxy(threading.Thread):
                     continue
                 else:
                     ret = commandparser.parseLine(data, self.entity)
-                    if ret == False:
+                    if not ret:
                         self.socket.send("What?\n")
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
