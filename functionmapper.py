@@ -15,6 +15,7 @@ if len(commandFunctions) == 0:
     commandFunctions["emote"] = (commands.emote)
     commandFunctions["ooc"] = (commands.ooc)
     commandFunctions["roll"] = (commands.roll)
+    commandFunctions["hroll"] = (commands.roll)
     commandFunctions["display"] = (commands.display)
     commandFunctions["mask"] = (commands.mask)
     commandFunctions["status"] = (commands.status)

@@ -44,7 +44,7 @@ def dispatchForever():
             args = commandsToExecute.pop()
 
             args = functionmapper.shorthandHandler(args)
-            command = args[0]
+            command = args.name
 
             if command in functionmapper.commandFunctions:
                 try:

@@ -50,9 +50,7 @@ class ClientProxy(threading.Thread):
                 if not data:
                     continue
                 else:
-                    ret = commandparser.parseLine(data, self.entity)
-                    if not ret:
-                        self.socket.send("What?\n")
+                    commandparser.parseLine(data, self.entity)
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             traceback.print_exception(exc_type, exc_value, exc_traceback, limit=None, file=sys.stdout)

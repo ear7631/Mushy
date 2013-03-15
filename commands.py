@@ -384,6 +384,13 @@ def roll(args):
         #20
         >>[DICE] DM_Eitan rolls 1d20.
         >>  18
+
+
+    Rolls can also be kept hidden from others. To do this, use the
+    command "hroll" instead of "roll".
+
+    example:
+        hroll 1d20
     """
     if len(args.tokens) < 2:
         return False
@@ -403,6 +410,10 @@ def roll(args):
     except:
         return False
 
+    visible = True
+    if args.tokens[0] == 'hroll':
+        visible = False
+
     purpose = args.full[len(args.tokens[0] + " " + args.tokens[1] + " "):]
 
     marking = "[DICE"
@@ -416,9 +427,10 @@ def roll(args):
         dice.append(random.randint(1, sides))
 
     for e in args.actor.instance.connections:
-        e.sendMessage(marking + args.actor.name + " rolls " + str(num) + "d" + str(sides) + ".")
-        for die in dice:
-            e.sendMessage("  " + str(die))
+        if visible or e == args.actor:
+            e.sendMessage(marking + args.actor.name + " rolls " + str(num) + "d" + str(sides) + ".")
+            for die in dice:
+                e.sendMessage("  " + str(die))
 
     return True
 
