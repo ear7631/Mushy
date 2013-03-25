@@ -56,7 +56,7 @@ def help(args):
         if functionName == helpFunctionName:
             docstring = function.__doc__
 
-    if docstring == None:
+    if docstring is None:
         args.actor.sendMessage("There is no helpfile for " + args.tokens[1] + ".")
     else:
         prelude = "help file for: " + args.tokens[1] + "\n" + ("-" * len("help file for: " + args.tokens[1]))
