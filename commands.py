@@ -802,3 +802,150 @@ def look(args):
     else:
         args.actor.sendMessage(description)
     return True
+
+
+def tally(args):
+    """
+    A player or DM may create a generic "tally" to keep track of something.
+    Tallies may be saved (persistent) or not (removed after logout).
+
+    syntax: tally <subcommand> <tag>
+
+    List of subcommands and syntax:
+        Add:        tally add <tag> [amount]
+        Change:     tally change <tag> <value>
+        Check:      tally check [tag]
+        Create:     tally create <tag> [initial]
+        Destroy:    tally destroy <tag>
+        Remove:     tally remove <tag> [amount]
+        Share:      tally share <tag> [entity]
+        Save:       tally save <tag>
+
+    There are a few shorthand commands for your convenience. You may increment
+    or decrement a tally easily using the following syntax:
+        tally <tag> ++
+        tally <tag> --
+
+    You may also check the values for all your tallies by simply entering
+    the command 'tallies'.
+    """
+
+    if len(args.tokens) < 3:
+        if len(args.tokens) == 1:
+            if args.tokens[0] != 'tallies':
+                return False
+        elif len(args.tokens) == 2:
+            if args.tokens[1] != 'check':
+                return False
+        else:
+            return False
+
+    tokens = args.tokens
+
+    # tallies substitution
+    if args.tokens[0] == 'tallies':
+        tokens = ['tally', 'check']
+
+    # shorthand substitution
+    elif '++' in args.full or '--' in args.full:
+        if tokens[2] == '++':
+            tokens = ['tally', 'add', tokens[1]]
+        elif tokens[2] == '--':
+            tokens = ['tally', 'remove', tokens[1]]
+
+    subcommand = tokens[1]
+    tag = ''
+    if len(tokens) > 2:
+        tag = tokens[2]
+
+    if subcommand == 'create':
+        if tag in args.actor.tallies:
+            args.actor.sendMessage("Tally " + tag + " already exists.")
+        else:
+            value = 0
+            if len(tokens) > 3:
+                value = int(tokens[3])
+            args.actor.tallies[tag] = value
+
+    elif subcommand == 'destroy':
+        if tag in args.actor.tallies:
+            del args.actor.tallies[tag]
+        else:
+            args.actor.sendMessage("Tally " + tag + " does not exist.")
+
+    elif subcommand == 'add':
+        if tag in args.actor.tallies:
+            value = 1
+            if len(tokens) > 3:
+                value = int(tokens[3])
+            args.actor.tallies[tag] += value
+        else:
+            args.actor.sendMessage("Tally " + tag + " does not exist.")
+
+    elif subcommand == 'remove':
+        if tag in args.actor.tallies:
+            value = 1
+            if len(tokens) > 3:
+                try:
+                    value = int(tokens[3])
+                except:
+                    return False
+            args.actor.tallies[tag] -= value
+        else:
+            args.actor.sendMessage("Tally " + tag + " does not exist.")
+
+    elif subcommand == 'change':
+        if tag in args.actor.tallies:
+            if len(tokens) > 3:
+                try:
+                    value = int(tokens[3])
+                except:
+                    return False
+                args.actor.tallies[tag] = value
+            else:
+                args.actor.sendMessage("Usage: tally change <tag> <amount>")
+        else:
+            args.actor.sendMessage("Tally " + tag + " does not exist.")
+
+    elif subcommand == 'share' or subcommand == 'show' or subcommand == 'display':
+        if tag in args.actor.tallies:
+            if len(tokens) > 3:
+                for e in args.actor.instance.connections:
+                    if e.name.lower() == tokens[3].lower():
+                        e.sendMessage(args.actor.name + " shares a tally with you: [" +
+                                      colorfy(tag, 'white') + ": " + colorfy(str(args.actor.tallies[tag]), 'cyan') + "]")
+                        args.actor.sendMessage("You share tally " + tag + " with " + tokens[3] + ": [" +
+                                               colorfy(tag, 'white') + ": " + colorfy(str(args.actor.tallies[tag]), 'cyan') + "]")
+            else:
+                for e in args.actor.instance.connections:
+                    e.sendMessage(args.actor.name + " shares a tally: [" +
+                                  colorfy(tag, 'white') + ": " + colorfy(str(args.actor.tallies[tag]), 'cyan') + "]")
+        else:
+            args.actor.sendMessage("Tally " + tag + " does not exist.")
+
+    elif subcommand == 'save':
+        args.actor.sendMessage("Tally saving is not yet implemented.")
+
+    elif subcommand == 'check' or subcommand == 'list':
+        if len(tokens) > 2:
+            tag = tokens[2]
+            if tag in args.actor.tallies:
+                args.actor.sendMessage("The value of tally " + tag + " is " + colorfy(str(args.actor.tallies[tag]), 'cyan') + ".")
+            else:
+                args.actor.sendMessage("Tally " + tag + " does not exist.")
+        else:
+            keys = args.actor.tallies.keys()
+            if len(keys) == 0:
+                args.actor.sendMessage("You have no tallies.")
+                return True
+
+            args.actor.sendMessage("------TALLIES------")
+            sorted(keys)
+            for key in keys:
+                args.actor.sendMessage("    [" + colorfy(key, 'white') + ": " +
+                                       colorfy(str(args.actor.tallies[key]), 'cyan') + "]")
+
+    else:
+        return False
+
+    return True

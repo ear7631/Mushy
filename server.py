@@ -125,6 +125,7 @@ def main():
     done = False
     while not done:
         try:
+            # client connects to the server
             client_socket, address = server_socket.accept()
             print "Server: Accepting connection from " + address[0] + "..."
             # spawn up a client proxy here

@@ -6,6 +6,9 @@ import commandparser
 
 
 class Entity(object):
+
+    __slots__ = ("proxy", "name", "instance", "dm", "status", "tallies", "bags", "facade")
+
     def __init__(self, proxy, name, instance):
         self.proxy = proxy
         if self.proxy is not None:
@@ -14,6 +17,11 @@ class Entity(object):
         self.instance = instance
         self.dm = False
         self.status = ""
+
+        # unused for now
+        self.tallies = {}
+        self.bags = {}
+        self.facade = None
 
     def sendMessage(self, message):
         if(self.proxy is not None):

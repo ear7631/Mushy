@@ -5,7 +5,6 @@ CommandArgs = namedtuple.namedtuple('CommandArgs', 'name tokens full actor')
 commandFunctions = {}
 
 if len(commandFunctions) == 0:
-    #commandFunctions["look"] = (commands.look)
     commandFunctions["say"] = (commands.say)
     commandFunctions["logout"] = (commands.logout)
     commandFunctions["help"] = (commands.help)
@@ -25,6 +24,8 @@ if len(commandFunctions) == 0:
     commandFunctions["erase"] = (commands.erase)
     commandFunctions["wipe"] = (commands.wipe)
     commandFunctions["look"] = (commands.look)
+    commandFunctions["tally"] = (commands.tally)
+    commandFunctions["tallies"] = (commands.tally)
 
 
 def shorthandHandler(args):
