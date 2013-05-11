@@ -949,3 +949,128 @@ def tally(args):
         return False
 
     return True
+
+
+def bag(args):
+    """
+    A player or DM may create a generic "bag" to keep track of items.
+    Bags may be saved (persistent) or not (removed after logout).
+
+    syntax: bag <subcommand> <tag>
+
+    List of subcommands and syntax:
+        Add:        bag add <tag> <item>
+        Check:      bag check [tag]
+        Create:     bag create <tag> [initial]
+        Empty:      bag empty <tag>
+        Destroy:    bag destroy <tag>
+        Remove:     bag remove <tag> <item>
+        Share:      bag share <tag> [entity]
+        Save:       bag save <tag>
+
+
+    You may also check the contents for all your bags by simply entering
+    the command 'bags'.
+    """
+
+    if len(args.tokens) < 3:
+        if len(args.tokens) == 1:
+            if args.tokens[0] != 'bags':
+                return False
+        elif len(args.tokens) == 2:
+            if args.tokens[1] != 'check':
+                return False
+        else:
+            return False
+
+    tokens = args.tokens
+
+    # bags substitution
+    if args.tokens[0] == 'bags':
+        tokens = ['bag', 'check']
+
+    subcommand = tokens[1]
+    tag = ''
+    if len(tokens) > 2:
+        tag = tokens[2]
+
+    if subcommand == 'create':
+        if tag in args.actor.bags:
+            args.actor.sendMessage("Bag " + tag + " already exists.")
+        else:
+            args.actor.bags[tag] = []
+
+    elif subcommand == 'destroy':
+        if tag in args.actor.bags:
+            del args.actor.bags[tag]
+        else:
+            args.actor.sendMessage("Bag " + tag + " does not exist.")
+
+    elif subcommand == 'add':
+        if len(tokens) < 4:
+            args.actor.sendMessage("Usage: bag add <tag> <item>")
+        elif tag in args.actor.bags:
+            item = tokens[3]
+            args.actor.bags[tag].append(item)
+        else:
+            args.actor.sendMessage("Bag " + tag + " does not exist.")
+
+    elif subcommand == 'remove':
+        if len(tokens) < 4:
+            args.actor.sendMessage("Usage: bag remove <tag> <item>")
+        elif tag in args.actor.bags:
+            item = tokens[3]
+            if item in args.actor.bags[tag]:
+                args.actor.bags.remove(item)
+            else:
+                args.actor.sendMessage("Bag " + tag + " does not contain item " + tokens[3] + ".")
+        else:
+            args.actor.sendMessage("Bag " + tag + " does not exist.")
+
+    elif subcommand == 'empty':
+        if tag in args.actor.bags:
+            args.actor.bags[tag] = []
+        else:
+            args.actor.sendMessage("Bag " + tag + " does not exist.")
+
+    elif subcommand == 'share' or subcommand == 'show' or subcommand == 'display':
+        if tag in args.actor.bags:
+            if len(tokens) > 3:
+                for e in args.actor.instance.connections:
+                    if e.name.lower() == tokens[3].lower():
+                        e.sendMessage(args.actor.name + " shares a bag (" + tag + ") with you:")
+                        args.actor.sendMessage("You share a bag (" + tag + ") with " + tokens[3] + ":")
+                        # TODO: share the actual bag
+            else:
+                for e in args.actor.instance.connections:
+                    e.sendMessage(args.actor.name + " shares a bag (" + tag + "):")
+                    # TODO: share the actual bag
+        else:
+            args.actor.sendMessage("Bag " + tag + " does not exist.")
+
+    elif subcommand == 'save':
+        args.actor.sendMessage("Bag saving is not yet implemented.")
+
+    elif subcommand == 'check' or subcommand == 'list':
+        if len(tokens) > 2:
+            tag = tokens[2]
+            if tag in args.actor.bags:
+                args.actor.sendMessage("The bag (" + tag + ") contains the following items:")
+            else:
+                args.actor.sendMessage("Bag " + tag + " does not exist.")
+        else:
+            keys = args.actor.bags.keys()
+            if len(keys) == 0:
+                args.actor.sendMessage("You have no bags.")
+                return True
+
+            args.actor.sendMessage("------BAGS------")
+            sorted(keys)
+            for key in keys:
+                continue
+                # TODO: actually check the bags
+
+    else:
+        return False
+
+    return True

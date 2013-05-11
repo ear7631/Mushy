@@ -26,6 +26,8 @@ if len(commandFunctions) == 0:
     commandFunctions["look"] = (commands.look)
     commandFunctions["tally"] = (commands.tally)
     commandFunctions["tallies"] = (commands.tally)
+    commandFunctions["bag"] = (commands.bag)
+    commandFunctions["bags"] = (commands.bag)
 
 
 def shorthandHandler(args):
