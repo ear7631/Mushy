@@ -734,6 +734,33 @@ def sculpt(args):
     return True
 
 
+def brush(args):
+    """
+    A DM may set a color for scene and object creation. The
+    color of all subsequent paint or sculpt commands are
+    dictated by the brush, set by this command.
+
+    The brush defaults to white if unset, or reset.
+
+    syntax: brush <color>
+            brush clean
+
+    To view a list of colors, type "colors".
+    """
+    if len(args.tokens) < 2:
+        return False
+
+    if not args.actor.dm:
+        return False
+
+    color = args.tokens[1]
+    if color == "reset":
+        args.actor.instance.stage.resetBrush(args.actor)
+    else:
+        args.actor.instance.stage.setBrush(args.actor, color)
+    return True
+
+
 def wipe(args):
     """
     A DM may wipe an entire scene and all objects painted in it.

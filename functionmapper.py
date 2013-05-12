@@ -23,7 +23,7 @@ if len(commandFunctions) == 0:
     commandFunctions["colors"] = colors
     commandFunctions["paint"] = paint
     commandFunctions["sculpt"] = sculpt
-    commandFunctions["erase"] = erase
+    commandFunctions["brush"] = brush
     commandFunctions["wipe"] = wipe
     commandFunctions["look"] = look
     commandFunctions["tally"] = tally
