@@ -657,30 +657,22 @@ def colors(args):
 
 def paint(args):
     """
-    A DM may "paint" items of interest into the session area. Three things
-    may be painted in a color of their choosing:
-        "Scene" title - The name of where you are
-        "Scene" body - The description of where you are
-        "Object" - A particular item of interest that can be looked at
+    A DM may "paint" the current scene of the session for players to
+    view. Two things may be painted in a scene.
+        "Scene" title - The name of the scene
+        "Scene" body - The description of the scene
 
     Players may look at the scene by using the "look" command with no
-    arguments. Players may also look at an object by specifying the
-    object tag.
+    arguments. The color of the painted text is dictated by the brush
+    setting. For information on setting a color, check "help brush".
 
-    syntax: paint [-c color] <title|body> <description>
-            paint [-c color] <object> <tag> <description>
-
-            color - the color which you want the text to display in
-            description - what the thing looks like
-            tag - the identifier to use when "looking" at an object
+    syntax: paint <title | body> <description>
 
     To view a list of colors, type "colors".
 
     example:
-        paint -c BRED title Inferno Cave
+        paint title Inferno Cave
         paint body Lava swirls around burning stone in a river of red.
-        paint -c RED object flame A pillar of flame burns
-                                             in the center of the cave.
     """
     if len(args.tokens) < 3:
         return False
@@ -688,41 +680,20 @@ def paint(args):
     if not args.actor.dm:
         return False
 
-    color = ""
     tokens = args.tokens
-    snipped = 0
-
     stage = args.actor.instance.stage
-
-    if tokens[1] == '-c':
-        if len(tokens) < 5:
-            return False
-
-        color = tokens[2].lower()
-        if not color in swatch:
-            return False
-
-        snipped = len(tokens[1] + " " + tokens[2] + " ")
-        tokens = [tokens[0]] + tokens[3:]
-    else:
-        color = "default"
+    color = stage.getBrush(args.actor)
+    snip = len(tokens[0]) + len(tokens[1]) + 2
 
     if tokens[1] == "title":
-        stage.paintSceneTitle(colorfy(args.full[snipped + len(tokens[0] + " " + tokens[1] + " "):], color))
+        stage.paintSceneTitle(colorfy(args.full[snip:], color))
         for e in args.actor.instance.connections:
-            e.sendMessage(colorfy(args.actor.name + " paints a scene.", "bright red"))
+            e.sendMessage(colorfy(args.actor.name + " gives the scene a name.", "bright red"))
 
     elif tokens[1] == "body":
-        stage.paintSceneBody(colorfy(args.full[snipped + len(tokens[0] + " " + tokens[1] + " "):], color))
+        stage.paintSceneBody(colorfy(args.full[snip:], color))
         for e in args.actor.instance.connections:
-            e.sendMessage(colorfy(args.actor.name + " paints a scene.", "bright red"))
-
-    elif tokens[1] == "object":
-        if len(tokens) < 4:
-            return False
-        stage.paintObject(tokens[2], colorfy(args.full[snipped + len(tokens[0] + " " + tokens[1] + " " + tokens[2] + " "):], color))
-        for e in args.actor.instance.connections:
-            e.sendMessage(colorfy(args.actor.name + " paints a " + tokens[2] + ".", "bright red"))
+            e.sendMessage(colorfy(args.actor.name + " paints the scene.", "bright red"))
 
     else:
         return False
@@ -730,42 +701,36 @@ def paint(args):
     return True
 
 
-def erase(args):
+def sculpt(args):
     """
-    A DM may erase a painted part of the scene, or a painted object.
+    A DM may "sculpt" an item of interest for players to view.
+    Players may look at the item by using the "look" command the tag
+    of the placed item as an argument. Players may also see a list of
+    currently placed items by simply using "look" with no arguments.
 
-    syntax: erase scene
-            erase object <tag>
+    The color of the painted text is dictated by the brush setting.
+    For information on setting a color, check "help brush".
 
-            tag - the identifier to use when "looking" at an object
+    syntax: sculpt <tag> <description>
+            sculpt remove <tag>
 
-    To view a list of objects in the scene, simply use the look command.
+    To view a list of colors, type "colors".
+
+    example:
+        paint rat A little black rat scurries across the floor.
     """
-    if len(args.tokens) < 2:
+    if len(args.tokens) < 3:
         return False
 
     if not args.actor.dm:
         return False
 
     stage = args.actor.instance.stage
-
-    if args.tokens[1] == "scene":
-        stage.wipeScene()
-        for e in args.actor.instance.connections:
-            e.sendMessage(colorfy(args.actor.name + " erases the scene.", "bright red"))
-
-    elif args.tokens[1] == "object":
-        if len(args.tokens) < 3:
-            return False
-
-        if args.tokens[2].lower() in stage.objects:
-            stage.eraseObject(args.tokens[2])
-            for e in args.actor.instance.connections:
-                e.sendMessage(colorfy(args.actor.name + " erases the " + args.tokens[2] + ".", "bright red"))
-
-    else:
-        return False
-
+    color = stage.getBrush(args.actor)
+    snip = len(args.tokens[0]) + len(args.tokens[1]) + 2
+    stage.paintObject(args.tokens[1], colorfy(args.full[snip:], color))
+    for e in args.actor.instance.connections:
+        e.sendMessage(colorfy(args.actor.name + " sculpts an object into the scene.", "bright red"))
     return True
 
 

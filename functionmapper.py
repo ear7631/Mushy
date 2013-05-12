@@ -1,33 +1,36 @@
-import commands
+from commands import *
 import namedtuple
 
 CommandArgs = namedtuple.namedtuple('CommandArgs', 'name tokens full actor')
 commandFunctions = {}
 
+# On first load, initialize the function mappings
 if len(commandFunctions) == 0:
-    commandFunctions["say"] = (commands.say)
-    commandFunctions["logout"] = (commands.logout)
-    commandFunctions["help"] = (commands.help)
-    commandFunctions["who"] = (commands.who)
-    commandFunctions["pm"] = (commands.pm)
-    commandFunctions["whisper"] = (commands.whisper)
-    commandFunctions["emote"] = (commands.emote)
-    commandFunctions["ooc"] = (commands.ooc)
-    commandFunctions["roll"] = (commands.roll)
-    commandFunctions["hroll"] = (commands.roll)
-    commandFunctions["display"] = (commands.display)
-    commandFunctions["mask"] = (commands.mask)
-    commandFunctions["status"] = (commands.status)
-    commandFunctions["glance"] = (commands.glance)
-    commandFunctions["colors"] = (commands.colors)
-    commandFunctions["paint"] = (commands.paint)
-    commandFunctions["erase"] = (commands.erase)
-    commandFunctions["wipe"] = (commands.wipe)
-    commandFunctions["look"] = (commands.look)
-    commandFunctions["tally"] = (commands.tally)
-    commandFunctions["tallies"] = (commands.tally)
-    commandFunctions["bag"] = (commands.bag)
-    commandFunctions["bags"] = (commands.bag)
+    commandFunctions["say"] = say
+    commandFunctions["logout"] = logout
+    commandFunctions["help"] = help
+    commandFunctions["who"] = who
+    commandFunctions["pm"] = pm
+    commandFunctions["whisper"] = whisper
+    commandFunctions["emote"] = emote
+    commandFunctions["ooc"] = ooc
+    commandFunctions["roll"] = roll
+    commandFunctions["hroll"] = roll
+    commandFunctions["display"] = display
+    commandFunctions["mask"] = mask
+    commandFunctions["status"] = status
+    commandFunctions["glance"] = glance
+    commandFunctions["colors"] = colors
+    commandFunctions["paint"] = paint
+    commandFunctions["sculpt"] = sculpt
+    commandFunctions["erase"] = erase
+    commandFunctions["wipe"] = wipe
+    commandFunctions["look"] = look
+    commandFunctions["tally"] = tally
+    commandFunctions["tallies"] = tally
+    commandFunctions["bag"] = bag
+    commandFunctions["bags"] = bag
+
 
 
 def shorthandHandler(args):
