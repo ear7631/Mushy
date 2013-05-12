@@ -621,6 +621,10 @@ def glance(args):
     return True
 
 
+def examine(args):
+    pass
+
+
 def colors(args):
     """
     Displays a list of the colors available for use in certain commands.

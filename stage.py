@@ -1,8 +1,12 @@
+from colorer import colors as swatch
+
+
 class Stage(object):
 
-    __slots__ = ("objects", "title", "body")
+    __slots__ = ("objects", "title", "body", "brushes")
 
     def __init__(self):
+        self.brushes = {}
         self.objects = {}
         self.title = ""
         self.body = ""
@@ -53,3 +57,22 @@ class Stage(object):
 
     def wipeObjects(self):
         self.objects.clear()
+
+    def _initBrush(self, entity):
+        if not entity in self.brushes:
+            self.brushes[entity] = "white"
+
+    def setBrush(self, entity, color):
+        self._initBrush(entity)
+        if color in swatch:
+            self.brushes[entity] = color
+        else:
+            self.brushes[entity] = "white"
+
+    def resetBrush(self, entity):
+        self._initBrush(entity)
+        self.brushes[entity] = "white"
+
+    def getBrush(self, entity):
+        self._initBrush(entity)
+        return self.brushes[entity]
