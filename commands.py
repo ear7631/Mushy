@@ -688,6 +688,8 @@ def paint(args):
     tokens = args.tokens
     snipped = 0
 
+    stage = args.actor.instance.stage
+
     if tokens[1] == '-c':
         if len(tokens) < 5:
             return False
@@ -702,19 +704,19 @@ def paint(args):
         color = "default"
 
     if tokens[1] == "title":
-        args.actor.instance.paintSceneTitle(colorfy(args.full[snipped + len(tokens[0] + " " + tokens[1] + " "):], color))
+        stage.paintSceneTitle(colorfy(args.full[snipped + len(tokens[0] + " " + tokens[1] + " "):], color))
         for e in args.actor.instance.connections:
             e.sendMessage(colorfy(args.actor.name + " paints a scene.", "bright red"))
 
     elif tokens[1] == "body":
-        args.actor.instance.paintSceneBody(colorfy(args.full[snipped + len(tokens[0] + " " + tokens[1] + " "):], color))
+        stage.paintSceneBody(colorfy(args.full[snipped + len(tokens[0] + " " + tokens[1] + " "):], color))
         for e in args.actor.instance.connections:
             e.sendMessage(colorfy(args.actor.name + " paints a scene.", "bright red"))
 
     elif tokens[1] == "object":
         if len(tokens) < 4:
             return False
-        args.actor.instance.paintObject(tokens[2], colorfy(args.full[snipped + len(tokens[0] + " " + tokens[1] + " " + tokens[2] + " "):], color))
+        stage.paintObject(tokens[2], colorfy(args.full[snipped + len(tokens[0] + " " + tokens[1] + " " + tokens[2] + " "):], color))
         for e in args.actor.instance.connections:
             e.sendMessage(colorfy(args.actor.name + " paints a " + tokens[2] + ".", "bright red"))
 
@@ -741,8 +743,10 @@ def erase(args):
     if not args.actor.dm:
         return False
 
+    stage = args.actor.instance.stage
+
     if args.tokens[1] == "scene":
-        args.actor.instance.wipeScene()
+        stage.wipeScene()
         for e in args.actor.instance.connections:
             e.sendMessage(colorfy(args.actor.name + " erases the scene.", "bright red"))
 
@@ -750,8 +754,8 @@ def erase(args):
         if len(args.tokens) < 3:
             return False
 
-        if args.tokens[2].lower() in args.actor.instance.objects:
-            args.actor.instance.eraseObject(args.tokens[2])
+        if args.tokens[2].lower() in stage.objects:
+            stage.eraseObject(args.tokens[2])
             for e in args.actor.instance.connections:
                 e.sendMessage(colorfy(args.actor.name + " erases the " + args.tokens[2] + ".", "bright red"))
 
@@ -770,8 +774,9 @@ def wipe(args):
     if not args.actor.dm:
         return False
 
-    args.actor.instance.wipeScene()
-    args.actor.instance.wipeObjects()
+    stage = args.actor.instance.stage
+    stage.wipeScene()
+    stage.wipeObjects()
 
     for e in args.actor.instance.connections:
         e.sendMessage(colorfy(args.actor.name + " wipes the whole scene.", "bright red"))
@@ -788,15 +793,17 @@ def look(args):
 
     To view a list of objects in the scene, simply use look without arguments.
     """
+    stage = args.actor.instance.stage
+
     if len(args.tokens) == 1:
-        scene = args.actor.instance.viewScene()
+        scene = stage.viewScene()
         if scene == "":
             args.actor.sendMessage("The scene is blank.")
         else:
             args.actor.sendMessage(scene)
         return True
 
-    description = args.actor.instance.viewObject(args.tokens[1])
+    description = stage.viewObject(args.tokens[1])
     if description == "":
         args.actor.sendMessage('There is no "' + args.tokens[1] + '" in the scene.')
     else:
