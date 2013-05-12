@@ -965,7 +965,7 @@ def bag(args):
         Empty:      bag empty <tag>
         Destroy:    bag destroy <tag>
         Remove:     bag remove <tag> <item>
-        Share:      bag share <tag> [entity]
+        Share:      bag share <tag | all> [entity]
         Save:       bag save <tag>
 
 
@@ -1034,17 +1034,37 @@ def bag(args):
             args.actor.sendMessage("Bag " + tag + " does not exist.")
 
     elif subcommand == 'share' or subcommand == 'show' or subcommand == 'display':
-        if tag in args.actor.bags:
+        keys = args.actor.bags.keys()
+        if len(keys) == 0:
+            args.actor.sendMessage("You have no bags.")
+            return True
+        sorted(keys)
+
+        if tag == 'all':
             if len(tokens) > 3:
                 for e in args.actor.instance.connections:
                     if e.name.lower() == tokens[3].lower():
-                        e.sendMessage(args.actor.name + " shares a bag (" + tag + ") with you:")
-                        args.actor.sendMessage("You share a bag (" + tag + ") with " + tokens[3] + ":")
-                        # TODO: share the actual bag
+                        e.sendMessage(args.actor.name + " shares some bags with you: ")
+                        args.actor.sendMessage("You share your bags with " + tokens[3] + ".")
+                        for key in keys:
+                            e.sendMessage("    " + key + ": " + str(args.actor.bags[key]))
+            else:
+                args.actor.sendMessage("You share your bags.")
+                for e in args.actor.instance.connections:
+                    if e.name.lower() == args.actor.name.lower():
+                        continue
+                    e.sendMessage(args.actor.name + " shares some bags:")
+                    for key in keys:
+                        e.sendMessage("    " + key + ": " + str(args.actor.bags[key]))
+        elif tag in args.actor.bags:
+            if len(tokens) > 3:
+                for e in args.actor.instance.connections:
+                    if e.name.lower() == tokens[3].lower():
+                        e.sendMessage(args.actor.name + " shares a bag (" + tag + ") with you: " + str(args.actor.bags[tag]))
+                        args.actor.sendMessage("You share a bag (" + tag + ") with " + tokens[3] + ".")
             else:
                 for e in args.actor.instance.connections:
-                    e.sendMessage(args.actor.name + " shares a bag (" + tag + "):")
-                    # TODO: share the actual bag
+                    e.sendMessage(args.actor.name + " shares a bag (" + tag + "): " + str(args.actor.bags[tag]))
         else:
             args.actor.sendMessage("Bag " + tag + " does not exist.")
 
@@ -1055,7 +1075,7 @@ def bag(args):
         if len(tokens) > 2:
             tag = tokens[2]
             if tag in args.actor.bags:
-                args.actor.sendMessage("The bag (" + tag + ") contains the following items:")
+                args.actor.sendMessage("The bag (" + tag + ") contains the following items: " + str(args.actor.bags[tag]))
             else:
                 args.actor.sendMessage("Bag " + tag + " does not exist.")
         else:
@@ -1067,8 +1087,7 @@ def bag(args):
             args.actor.sendMessage("------BAGS------")
             sorted(keys)
             for key in keys:
-                continue
-                # TODO: actually check the bags
+                args.actor.sendMessage("    " + key + ": " + str(args.actor.bags[key]))
 
     else:
         return False
