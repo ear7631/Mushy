@@ -30,6 +30,7 @@ if len(commandFunctions) == 0:
     commandFunctions["tallies"] = tally
     commandFunctions["bag"] = bag
     commandFunctions["bags"] = bag
+    commandFunctions["save"] = save
 
 
 

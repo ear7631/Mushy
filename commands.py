@@ -5,6 +5,7 @@ import namedtuple
 import functionmapper
 import commandparser
 import entity
+import persist
 from colorer import colors as swatch
 from colorer import colorfy
 
@@ -32,6 +33,13 @@ def help(args):
     syntax: help <subject>
             subject - the subject or command which you want to check for help
     """
+
+    # generate the docstring mapping first
+    docs = {}
+    functions = inspect.getmembers(sys.modules[__name__], inspect.isfunction)
+    for functionName, function in functions:
+        docs[functionName] = function.__doc__
+
     if len(args.tokens) == 1:
         commands = functionmapper.commandFunctions.keys()
         commands.sort()
@@ -39,6 +47,8 @@ def help(args):
         msg = "    "
         i = 0
         for command in commands:
+            if command not in docs or docs[command] is None:
+                continue
             msg = msg + command + (' ' * (15 - len(command)))
             i = (i + 1) % 4
             if i == 0:
@@ -49,12 +59,9 @@ def help(args):
 
         return True
 
-    helpFunctionName = args.tokens[1]
-    functions = inspect.getmembers(sys.modules[__name__], inspect.isfunction)
     docstring = None
-    for functionName, function in functions:
-        if functionName == helpFunctionName:
-            docstring = function.__doc__
+    if args.tokens[1] in docs:
+        docstring = docs[args.tokens[1]]
 
     if docstring is None:
         args.actor.sendMessage("There is no helpfile for " + args.tokens[1] + ".")
@@ -815,14 +822,14 @@ def tally(args):
     syntax: tally <subcommand> <tag>
 
     List of subcommands and syntax:
-        Add:        tally add <tag> [amount]
+        Add/Sub:    tally add/sub <tag> [amount]
         Change:     tally change <tag> <value>
         Check:      tally check [tag]
         Create:     tally create <tag> [initial]
         Destroy:    tally destroy <tag>
-        Remove:     tally remove <tag> [amount]
         Share:      tally share <tag> [entity]
         Save:       tally save <tag>
+        Unsave:     tally unsave <tag>
 
     There are a few shorthand commands for your convenience. You may increment
     or decrement a tally easily using the following syntax:
@@ -869,10 +876,12 @@ def tally(args):
             if len(tokens) > 3:
                 value = int(tokens[3])
             args.actor.tallies[tag] = value
+            args.actor.sendMessage("Tally " + tag + " initialized to " + str(value) + ".")
 
-    elif subcommand == 'destroy':
+    elif subcommand == 'destroy' or subcommand == 'delete':
         if tag in args.actor.tallies:
             del args.actor.tallies[tag]
+            args.actor.sendMessage("Tally " + tag + " destroyed.")
         else:
             args.actor.sendMessage("Tally " + tag + " does not exist.")
 
@@ -882,10 +891,11 @@ def tally(args):
             if len(tokens) > 3:
                 value = int(tokens[3])
             args.actor.tallies[tag] += value
+            args.actor.sendMessage("Tally " + tag + " incremented to: " + str(args.actor.tallies[tag]))
         else:
             args.actor.sendMessage("Tally " + tag + " does not exist.")
 
-    elif subcommand == 'remove':
+    elif subcommand == 'subtract' or subcommand == 'sub':
         if tag in args.actor.tallies:
             value = 1
             if len(tokens) > 3:
@@ -894,6 +904,7 @@ def tally(args):
                 except:
                     return False
             args.actor.tallies[tag] -= value
+            args.actor.sendMessage("Tally " + tag + " incremented to: " + str(args.actor.tallies[tag]))
         else:
             args.actor.sendMessage("Tally " + tag + " does not exist.")
 
@@ -905,6 +916,7 @@ def tally(args):
                 except:
                     return False
                 args.actor.tallies[tag] = value
+                args.actor.sendMessage("Tally " + tag + " value now set to " + str(value) + ".")
             else:
                 args.actor.sendMessage("Usage: tally change <tag> <amount>")
         else:
@@ -927,13 +939,16 @@ def tally(args):
             args.actor.sendMessage("Tally " + tag + " does not exist.")
 
     elif subcommand == 'save':
-        args.actor.sendMessage("Tally saving is not yet implemented.")
+        args.actor.tallies_persist.append(tag)
+        args.actor.sendMessage("Tally " + tag + " marked for saving.")
 
     elif subcommand == 'check' or subcommand == 'list':
         if len(tokens) > 2:
             tag = tokens[2]
             if tag in args.actor.tallies:
                 args.actor.sendMessage("The value of tally " + tag + " is " + colorfy(str(args.actor.tallies[tag]), 'cyan') + ".")
+                if tag in args.actor.tallies_persist:
+                    args.actor.sendMessage("    This tally is marked to be saved.")
             else:
                 args.actor.sendMessage("Tally " + tag + " does not exist.")
         else:
@@ -944,9 +959,19 @@ def tally(args):
 
             args.actor.sendMessage("------TALLIES------")
             sorted(keys)
+            perma_mark = "(" + colorfy("saved", "green") + ")"
             for key in keys:
-                args.actor.sendMessage("    [" + colorfy(key, 'white') + ": " +
-                                       colorfy(str(args.actor.tallies[key]), 'cyan') + "]")
+                s = "    [" + colorfy(key, 'white') + ": " + colorfy(str(args.actor.tallies[key]), 'cyan') + "]"
+                if key in args.actor.tallies_persist:
+                    s = s + " " + perma_mark
+                args.actor.sendMessage(s)
+
+    elif subcommand == 'unsave':
+        if tag in args.actor.tallies_persist:
+            args.actor.tallies_persist.remove(tag)
+            args.actor.sendMessage("Tally " + tag + " no longer marked for saving.")
+        else:
+            args.actor.sendMessage("Tally " + tag + " does not exist.")
 
     else:
         return False
@@ -1097,3 +1122,11 @@ def bag(args):
 
     return True
 
+
+def save(args):
+    """
+    Saves all persistent stuff.
+    """
+    persist.saveEntity(args.actor)
+    args.actor.sendMessage("Profile saved.")
+    return True

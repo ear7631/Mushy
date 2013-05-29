@@ -82,11 +82,12 @@ class LoginProxy(threading.Thread):
                     self.socket.send("\n")
                     validated = persist.validate(username, password)
                     if not validated:
-                        self.socket.send("Incorrect, try again:")
+                        self.socket.send("Incorrect, try again:\n")
                         tries += 1
                 if not validated:
                     self.socket.send("Tried too many times. Disconnected.\n")
-                    exit()
+                    self.kill()
+                    return
 
                 # sanity check to make sure the player is not already connected
                 if self.checkIfOnline(username):
@@ -102,7 +103,7 @@ class LoginProxy(threading.Thread):
                         elif choice.lower() == 'n':
                             self.kill()
                             self.socket.send("Disconnecting.\n")
-                            exit()
+                            return
 
                 self.socket.send("Welcome back, " + username + ".\n")
                 player = persist.loadEntity(username)
@@ -127,11 +128,12 @@ class LoginProxy(threading.Thread):
                     # repeat check
                     if repeat != password:
                         self.socket.send("Password mis-match. Reconnect and try again.\n")
-                        exit()
+                        self.kill()
+                        return
 
                 # create a new entity and save it
-                hcode = persist.hashPassword(password)
-                player = entity.Entity(name=username, hcode=hcode)
+                salt, hcode = persist.hashPassword(password)
+                player = entity.Entity(name=username, hcode=hcode, salt=salt)
 
                 self.socket.send("Are you the DM for the group (y if yes)? ")
                 choice = self.socket.recv(4096).strip()

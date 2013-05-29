@@ -2,6 +2,7 @@ import json
 import os
 import entity
 import hashlib
+import uuid
 
 """
 Because this is so light-weight, and subject to change, things will be stored
@@ -19,8 +20,10 @@ def profileExists(username):
     return os.path.exists("./profiles/" + username + ".json")
 
 
-def hashPassword(password):
-    return hashlib.sha512(password).hexdigest()
+def hashPassword(password, salt=None):
+    if salt is None:
+        salt = uuid.uuid4().hex
+    return salt, hashlib.sha512(password + salt).hexdigest()
 
 
 def validate(username, password):
@@ -32,19 +35,22 @@ def validate(username, password):
     f.close()
     data = json.loads(j)
     hcode = data["hcode"]
+    salt = data["salt"]
 
-    hcode_attempt = hashPassword(password)
+    salt, hcode_attempt = hashPassword(password, salt=salt)
+
     return hcode == hcode_attempt
 
 
 def saveEntity(e):
     if profileExists(e.name):
-        os.remove(e.name + ".json")
+        os.remove("./profiles/" + e.name + ".json")
     f = open("./profiles/" + e.name + ".json", "w")
 
     data = {}
     data["name"] = e.name
     data["hcode"] = e.hcode
+    data["salt"] = e.salt
 
     tally_data = {}
     for key in e.tallies:
@@ -79,6 +85,7 @@ def loadEntity(username):
     e.bags = data["bags"]
     e.bags_persist = e.bags.keys()
     e.hcode = data["hcode"]
+    e.salt = data["salt"]
     e.dm = data["dm"]
 
     return e
