@@ -474,7 +474,7 @@ def mask(args):
         args.actor.sendMessage("Whoa there... This is a DM power! Bad!")
         return True
 
-    husk = entity.Entity(None, args.tokens[1][0].upper() + args.tokens[1][1:], args.actor.instance)
+    husk = entity.Entity(name=args.tokens[1][0].upper() + args.tokens[1][1:], instance=args.actor.instance)
     new_name = args.tokens[2]
     new_tokens = args.tokens[2:]
     new_full = args.full[len(args.tokens[0] + " " + args.tokens[1] + " "):]
