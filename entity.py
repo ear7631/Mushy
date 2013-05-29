@@ -7,9 +7,9 @@ import commandparser
 
 class Entity(object):
 
-    __slots__ = ("proxy", "name", "instance", "dm", "status", "tallies", "bags", "facade")
+    __slots__ = ("proxy", "name", "instance", "dm", "status", "tallies", "bags", "facade", "tallies_persist", "bags_persist", "hcode")
 
-    def __init__(self, proxy, name, instance):
+    def __init__(self, name="", hcode=None, proxy=None, instance=None):
         self.proxy = proxy
         if self.proxy is not None:
             self.proxy.setEntity(self)
@@ -18,10 +18,14 @@ class Entity(object):
         self.dm = False
         self.status = ""
 
-        # unused for now
         self.tallies = {}
         self.bags = {}
         self.facade = None
+
+        self.tallies_persist = []
+        self.bags_persist = []
+
+        self.hcode = hcode
 
     def sendMessage(self, message):
         if(self.proxy is not None):
@@ -30,6 +34,10 @@ class Entity(object):
             except:
                 print "Server: Exception thrown while sending " + self.name + " a message."
                 self.proxy.kill()
+
+    def hookProxy(self, proxy):
+        self.proxy = proxy
+        self.proxy.setEntity(self)
 
 
 class ClientProxy(threading.Thread):
