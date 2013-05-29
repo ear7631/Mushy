@@ -283,6 +283,7 @@ def logout(args):
             args.actor.sendMessage(colorfy("[SERVER] You have quit the session.", "bright yellow"))
         else:
             e.sendMessage(colorfy("[SERVER] " + args.actor.name + " has quit the session.", "bright yellow"))
+    persist.saveEntity(args.actor)
     try:
         args.actor.proxy.running = False
         args.actor.instance.connections.remove(args.actor)
@@ -822,14 +823,13 @@ def tally(args):
     syntax: tally <subcommand> <tag>
 
     List of subcommands and syntax:
-        Add/Sub:    tally add/sub <tag> [amount]
-        Change:     tally change <tag> <value>
-        Check:      tally check [tag]
-        Create:     tally create <tag> [initial]
-        Destroy:    tally destroy <tag>
-        Share:      tally share <tag> [entity]
-        Save:       tally save <tag>
-        Unsave:     tally unsave <tag>
+        Add/Sub:        tally add/sub <tag> [amount]
+        Change:         tally change <tag> <value>
+        Check:          tally check [tag]
+        Create:         tally create <tag> [initial]
+        Destroy:        tally destroy <tag>
+        Share:          tally share <tag> [entity]
+        Save/Unsave:    tally save/unsave <tag>
 
     There are a few shorthand commands for your convenience. You may increment
     or decrement a tally easily using the following syntax:
@@ -987,14 +987,15 @@ def bag(args):
     syntax: bag <subcommand> <tag>
 
     List of subcommands and syntax:
-        Add:        bag add <tag> <item>
-        Check:      bag check [tag]
-        Create:     bag create <tag> [initial]
-        Empty:      bag empty <tag>
-        Destroy:    bag destroy <tag>
-        Remove:     bag remove <tag> <item>
-        Share:      bag share <tag | all> [entity]
-        Save:       bag save <tag>
+
+        Add/Remove:     bag add/remove <tag> <item>
+        Check:          bag check [tag]
+        Create:         bag create <tag> [initial]
+        Empty:          bag empty <tag>
+        Destroy:        bag destroy <tag>
+        Share:          bag share <tag | all> [entity]
+        Save/Unsave:    bag save/unsave <tag>
+
 
 
     You may also check the contents for all your bags by simply entering
@@ -1027,29 +1028,33 @@ def bag(args):
             args.actor.sendMessage("Bag " + tag + " already exists.")
         else:
             args.actor.bags[tag] = []
+            args.actor.sendMessage("Bag " + tag + " created.")
 
     elif subcommand == 'destroy':
         if tag in args.actor.bags:
             del args.actor.bags[tag]
+            args.actor.sendMessage("Bag " + tag + " destroyed.")
         else:
             args.actor.sendMessage("Bag " + tag + " does not exist.")
 
-    elif subcommand == 'add':
+    elif subcommand == 'add' or subcommand == 'put':
         if len(tokens) < 4:
             args.actor.sendMessage("Usage: bag add <tag> <item>")
         elif tag in args.actor.bags:
             item = tokens[3]
             args.actor.bags[tag].append(item)
+            args.actor.sendMessage("Item " + item + " added to bag " + tag + ".")
         else:
             args.actor.sendMessage("Bag " + tag + " does not exist.")
 
-    elif subcommand == 'remove':
+    elif subcommand == 'remove' or subcommand == 'take':
         if len(tokens) < 4:
             args.actor.sendMessage("Usage: bag remove <tag> <item>")
         elif tag in args.actor.bags:
             item = tokens[3]
             if item in args.actor.bags[tag]:
                 args.actor.bags.remove(item)
+                args.actor.sendMessage("Item " + item + " removed from bag " + tag + ".")
             else:
                 args.actor.sendMessage("Bag " + tag + " does not contain item " + tokens[3] + ".")
         else:
@@ -1058,6 +1063,7 @@ def bag(args):
     elif subcommand == 'empty':
         if tag in args.actor.bags:
             args.actor.bags[tag] = []
+            args.actor.sendMessage("Bag " + tag + " emptied.")
         else:
             args.actor.sendMessage("Bag " + tag + " does not exist.")
 
@@ -1097,7 +1103,8 @@ def bag(args):
             args.actor.sendMessage("Bag " + tag + " does not exist.")
 
     elif subcommand == 'save':
-        args.actor.sendMessage("Bag saving is not yet implemented.")
+        args.actor.bags_persist.append(tag)
+        args.actor.sendMessage("Bag " + tag + " marked for saving.")
 
     elif subcommand == 'check' or subcommand == 'list':
         if len(tokens) > 2:
@@ -1114,8 +1121,20 @@ def bag(args):
 
             args.actor.sendMessage("------BAGS------")
             sorted(keys)
+            perma_mark = "(" + colorfy("saved", "green") + ")"
             for key in keys:
-                args.actor.sendMessage("    " + key + ": " + str(args.actor.bags[key]))
+                s = "    " + key
+                if key in args.actor.bags_persist:
+                    s = s + " " + perma_mark
+                s = s + ": " + str(args.actor.bags[key])
+                args.actor.sendMessage(s)
+
+    elif subcommand == 'unsave':
+        if tag in args.actor.bags_persist:
+            args.actor.bags_persist.remove(tag)
+            args.actor.sendMessage("Bag " + tag + " no longer marked for saving.")
+        else:
+            args.actor.sendMessage("Bag " + tag + " does not exist.")
 
     else:
         return False
