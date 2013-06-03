@@ -31,7 +31,10 @@ if len(commandFunctions) == 0:
     commandFunctions["bag"] = bag
     commandFunctions["bags"] = bag
     commandFunctions["save"] = save
-
+    commandFunctions["desc"] = description
+    commandFunctions["description"] = description
+    commandFunctions["exa"] = examine
+    commandFunctions["examine"] = examine
 
 
 def shorthandHandler(args):

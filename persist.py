@@ -64,7 +64,7 @@ def saveEntity(e):
             bag_data[key] = e.bags[key]
     data["bags"] = bag_data
 
-    data["facade"] = "Empty for now."
+    data["facade"] = e.facade
     data["dm"] = e.dm
     f.write(json.dumps(data))
     f.close()
@@ -87,5 +87,6 @@ def loadEntity(username):
     e.hcode = data["hcode"]
     e.salt = data["salt"]
     e.dm = data["dm"]
+    e.facade = data["facade"]
 
     return e

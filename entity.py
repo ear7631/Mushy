@@ -1,6 +1,7 @@
 import traceback
 import sys
 import threading
+import time
 import socket
 import commandparser
 
@@ -44,19 +45,24 @@ class Entity(object):
 
 
 class ClientProxy(threading.Thread):
+
+    __slots__ = ("socket", "entity", "running", "bypass")
+
     def __init__(self, socket):
         threading.Thread.__init__(self)
         self.socket = socket
         self.entity = None
         self.running = False
+        self.bypass = False
 
     def setEntity(self, entity):
         self.entity = entity
 
     def kill(self):
         try:
-            self.socket.shutdown(socket.SHUT_RDWR)
-            self.socket.close()
+            if self.socket:
+                self.socket.shutdown(socket.SHUT_RDWR)
+                self.socket.close()
             self.running = False
         except:
             pass
@@ -65,14 +71,19 @@ class ClientProxy(threading.Thread):
         try:
             self.running = True
             while self.running:
-                data = self.socket.recv(4096).strip()
-                if not data:
-                    continue
+                if self.bypass:
+                    time.sleep(0)
                 else:
-                    commandparser.parseLine(data, self.entity)
+                    data = self.socket.recv(4096).strip()
+                    if not data:
+                        continue
+                    else:
+                        commandparser.parseLine(data, self.entity)
+
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             traceback.print_exception(exc_type, exc_value, exc_traceback, limit=None, file=sys.stdout)
             self.running = False
-            self.socket.close()
+            if self.socket:
+                self.socket.close()
             print "Client connection closed"

@@ -6,6 +6,7 @@ import functionmapper
 import commandparser
 import entity
 import persist
+import editor
 from colorer import colors as swatch
 from colorer import colorfy
 
@@ -540,7 +541,7 @@ def display(args):
                 if e.name.lower() == target_name.lower():
                     target = e
 
-            if target == None:
+            if target is None:
                 return False
             rest = rest[len(args.tokens[3] + " " + args.tokens[4] + " "):]
     else:
@@ -548,7 +549,7 @@ def display(args):
 
     rest = colorfy(rest, color)
 
-    if target != None:
+    if target is not None:
         target.sendMessage(rest)
     else:
         for e in args.actor.instance.connections:
@@ -630,7 +631,20 @@ def glance(args):
 
 
 def examine(args):
-    pass
+    """
+    Examines another player's profile.
+    """
+
+    if len(args.tokens) >= 3:
+        return False
+
+    for e in args.actor.instance.connections:
+        if e.name.lower() == args.tokens[1].lower():
+            top = e.name + "'s Profile"
+            args.actor.sendMessage(top)
+            args.actor.sendMessage("-"*len(top))
+            args.actor.sendMessage(e.facade)
+    return True
 
 
 def colors(args):
@@ -1149,3 +1163,34 @@ def save(args):
     persist.saveEntity(args.actor)
     args.actor.sendMessage("Profile saved.")
     return True
+
+
+def description(args):
+    """
+    A player may create a description for his or her character.
+
+    syntax: description | desc
+
+    You may clear your description by using the following command:
+        desc clear
+
+    You may check your own description by using the "examine" command.
+    """
+    if len(args.tokens) > 1 and args.tokens[1] in ("clear", "erase", "clean"):
+        args.actor.facade = ""
+        persist.saveEntity(args.actor)
+        args.actor.sendMessage("Description erased.")
+        return True
+
+    args.actor.sendMessage("Opening the Mushy editor.")
+    editor_instance = editor.Editor(args.actor)
+    text = editor_instance.start()
+    args.actor.facade = text
+    persist.saveEntity(args.actor)
+    return True
+
+
+# Some commands take in subsequent text on multiple lines.
+# These commands need to be recognized so that they can "hold" an entity's
+# input loop before the next text comes in. These are marked here for now.
+INPUT_BLOCK = set([description])

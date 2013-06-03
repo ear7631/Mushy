@@ -3,6 +3,7 @@ import threading
 import time
 import namedtuple
 import traceback
+import commands
 
 CommandArgs = namedtuple.namedtuple('CommandArgs', 'name tokens full actor')
 commandsToExecute = []
@@ -14,6 +15,11 @@ def parseLine(line, entity):
     line = line.strip()
     tokens = line.split(" ")
     args = CommandArgs(name=tokens[0], tokens=tokens, full=line, actor=entity)
+
+    # This is for input blocking
+    if args.name in functionmapper.commandFunctions and functionmapper.commandFunctions[args.name] in commands.INPUT_BLOCK:
+        entity.proxy.bypass = True
+
     queueCommand(args)
 
 
@@ -42,7 +48,6 @@ def dispatchForever():
         else:
             # get the next command in the queue and execute it
             args = commandsToExecute.pop()
-
             args = functionmapper.shorthandHandler(args)
             command = args.name
 
@@ -51,6 +56,9 @@ def dispatchForever():
                     ret = functionmapper.commandFunctions[command](args)  # this calls the function
                     if not ret:
                         args.actor.sendMessage("What?")
+                    else:
+                        # This is for the input blocking. Make sure that user has input control again.
+                        args.actor.proxy.bypass = False
                 except:
                     print "Server: An error has occured."
                     print "-----------------------------"
