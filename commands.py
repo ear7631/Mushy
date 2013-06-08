@@ -1,6 +1,4 @@
-import sys
-import inspect
-import random
+import sys, inspect, threading, random, urllib2, json
 import namedtuple
 import functionmapper
 import commandparser
@@ -1159,6 +1157,8 @@ def bag(args):
 def save(args):
     """
     Saves all persistent stuff.
+
+    Syntax: save
     """
     persist.saveEntity(args.actor)
     args.actor.sendMessage("Profile saved.")
@@ -1184,13 +1184,81 @@ def description(args):
 
     args.actor.sendMessage("Opening the Mushy editor.")
     editor_instance = editor.Editor(args.actor)
-    text = editor_instance.start()
+    editor_instance.launch(callback=_description, callback_args=args)
+    return True
+
+
+def _description(args, text):
     args.actor.facade = text
     persist.saveEntity(args.actor)
+    args.actor.sendMessage("Profile saved.")
+
+
+def hastepaste(args):
+    """
+    This is a command for sharing large text documents with the group.
+
+    It opens up the in-server editor, and sends the text to hastebin, 
+    a really nice minimalist pastebin alternative. The link is then broadcast
+    to all users for viewing.
+
+    This is good for larger documents, because it can be shared with users 
+    without spamming their client.
+
+    Syntax: hastepaste [user1] [user2] ...
+
+    The DM may specify users to share the document privately
+    """
+    args.actor.sendMessage("Opening the Mushy editor.")
+    editor_instance = editor.Editor(args.actor)
+    editor_instance.launch(callback=_hastepaste, callback_args=args)
     return True
+
+
+def _hastepaste(args, text):
+    """
+    Callback from hastepaste.
+    """
+    req = urllib2.Request("http://hastebin.com/documents", text)
+    response = urllib2.urlopen(req)
+    d = json.loads(response.read())
+    link = "http://hastebin.com/raw/" + d['key']
+    sent = []
+    if len(args.tokens[1:]) > 0:
+        names = args.tokens[1:]
+        for i in range(len(names)):
+            names[i] = names[i].lower()
+
+        for e in args.actor.instance.connections:
+            if e.name.lower() in names:
+                e.sendMessage(colorfy("DM " + args.actor.name + " shares a document with you: " + link, "red"))
+                sent.append(e.name)
+        args.actor.sendMessage(colorfy("You share a document with: " + str(sent), "red"))
+    else:
+        for e in args.actor.instance.connections:
+            e.sendMessage(colorfy("DM " + args.actor.name + " shares a document with the session: " + link, "red"))
+
+
+def test(args):
+    """
+    Testing function for the editor.
+    """
+    args.actor.sendMessage("Opening the Mushy editor.")
+    editor_instance = editor.Editor(args.actor)
+    editor_instance.launch(callback=_test, callback_args=args)
+    return True
+
+
+def _test(args, text):
+    """
+    Testing function callback for the editor.
+    """
+    print text
+    print args
 
 
 # Some commands take in subsequent text on multiple lines.
 # These commands need to be recognized so that they can "hold" an entity's
 # input loop before the next text comes in. These are marked here for now.
-INPUT_BLOCK = set([description])
+# TODO: Is there a way to simply annotate these functions?
+INPUT_BLOCK = set([description, hastepaste, test])

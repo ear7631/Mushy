@@ -15,4 +15,7 @@ colors = {
 
 
 def colorfy(text, color):
-    return "\033[" + colors[color] + "m" + text + "\033[0m"
+    key = "normal"
+    if color in colors:
+        key = color
+    return "\033[" + colors[key] + "m" + text + "\033[0m"

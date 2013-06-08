@@ -35,6 +35,8 @@ if len(commandFunctions) == 0:
     commandFunctions["description"] = description
     commandFunctions["exa"] = examine
     commandFunctions["examine"] = examine
+    commandFunctions["hastepaste"] = hastepaste
+    commandFunctions["test"] = test
 
 
 def shorthandHandler(args):

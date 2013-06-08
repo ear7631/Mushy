@@ -56,9 +56,6 @@ def dispatchForever():
                     ret = functionmapper.commandFunctions[command](args)  # this calls the function
                     if not ret:
                         args.actor.sendMessage("What?")
-                    else:
-                        # This is for the input blocking. Make sure that user has input control again.
-                        args.actor.proxy.bypass = False
                 except:
                     print "Server: An error has occured."
                     print "-----------------------------"

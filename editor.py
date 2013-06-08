@@ -1,20 +1,14 @@
+import threading
+
+
 class Editor(object):
 
     __slots__ = ("actor", "marker", "lines", "socket", "text")
 
     def __init__(self, actor, text=""):
         self.actor = actor
-        self.socket = None
         self.marker = 0
         self.lines = []
-
-    def takeFocus(self):
-        self.socket = self.actor.proxy.socket
-        self.actor.proxy.bypass = True
-
-    def releaseFocus(self):
-        self.socket = None
-        self.actor.proxy.bypass = False
 
     def updateText(self):
         self.text = ""
@@ -24,14 +18,17 @@ class Editor(object):
     def updateLines(self):
         pass
 
-    def start(self):
-        self.takeFocus()
+    def launch(self, callback=None, callback_args=()):
+        t = threading.Thread(target=self._start, args=(callback, callback_args))
+        t.start()
+
+    def _start(self, callback=None, callback_args=()):
         self.actor.sendMessage("You may enter in as many lines of text as you wish.")
         self.actor.sendMessage("Type ** on its own line to finish, ~help to see commands.")
         done = False
 
         while not done:
-            data = self.socket.recv(4096)
+            data = self.actor.proxy.socket.recv(4096)
             data = data.replace("\r\n", "\n")
             tokens = data.strip().split(" ")
 
@@ -80,6 +77,11 @@ class Editor(object):
                     self.marker += 1
 
         self.updateText()
-        self.releaseFocus()
         self.actor.sendMessage("Leaving the Mushy editor.")
-        return self.text
+        if callback is None:
+            return self.text
+
+        self.actor.proxy.bypass = False
+        return callback(callback_args, self.text)
+        
+        
