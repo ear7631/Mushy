@@ -42,7 +42,7 @@ def stopDispatching():
 def dispatchForever():
     # need to do this shit in a new thread
     while parsing:
-        # If we have no commands to execute, fuck it
+        # If we have no commands to execute
         if len(commandsToExecute) == 0:
             time.sleep(0)
         else:
