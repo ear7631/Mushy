@@ -15,6 +15,7 @@ colors = {
 
 
 def colorfy(text, color):
+    color = color.lower()
     key = "normal"
     if color in colors:
         key = color

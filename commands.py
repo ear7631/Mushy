@@ -26,9 +26,35 @@ def catchall(args):
     return False
 
 
+def zap(args):
+    """
+    Allows the DM to force-disconnect another user. Can be used if there
+    are errors regarding a user, or if someone misbehaves.
+    Note: The zapped player's data is not saved!
+
+    syntax: zap <player>
+    """
+    if not args.actor.dm:
+        return False
+    elif len(args.tokens) < 2:
+        args.actor.sendMessage("Usage: zap <player>")
+        return True
+    for e in args.actor.instance.connections:
+        if e.name.lower() == args.tokens[1].lower():
+            try:
+                e.proxy.running = False
+                e.instance.connections.remove(e)
+                e.proxy.kill()
+                args.actor.sendMessage("Disconnected " + e.name + ".")
+            except:
+                args.actor.sendMessage("Error while disconnecting user " + e.name + ".")
+    return True
+
+
 def help(args):
     """
     Check these helpfiles for something.
+    
     syntax: help <subject>
             subject - the subject or command which you want to check for help
     """
@@ -294,7 +320,7 @@ def logout(args):
 
 def emote(args):
     """
-    Perform an emote. Use the ";" token as a placeholder for your name.
+    Perform an emote. Use the ";" or "*" token as a placeholder for your name.
 
     syntax: emote <description containing ; somewhere>
 
@@ -306,11 +332,13 @@ def emote(args):
         >> Smoke drifts upwards from a pipe held between ;'s lips.'
 
 
-    Alternatively, as a shorthand, you may start an emote with the ";" token
-    (no space).
+    Alternatively, as a shorthand, you may start an emote with the ";" or "*"
+    token (with no space).
 
     example:
-        ;laughs heartedly.
+        ;laughs heartedly
+        or
+        *laughs heartedly
         >> Eitan laughs heartedly.
     """
 
@@ -343,10 +371,10 @@ def ooc(args):
 
 
     Alternatively, as a shorthand, you may start an ooc message with the
-    "*" token (no space).
+    "%" token (no space).
 
     example:
-        *If you keep metagaming, I'm going to rip you a new one!
+        %If you keep metagaming, I'm going to rip you a new one!
         >> [OOC DM_Eitan]: If you keep metagaming, I'm going to kill you!
     """
 
@@ -425,7 +453,12 @@ def roll(args):
 
     marking = "[DICE"
     if purpose != "":
-        marking = marking + " (" + purpose + ")"
+        marking = marking + " (" + purpose
+        if not visible:
+            marking = marking + ", hidden"
+        marking = marking + ")"
+    elif not visible:
+        marking = marking + " (hidden)"
     marking = marking + "] "
     marking = colorfy(marking, 'bright yellow')
 
@@ -549,9 +582,13 @@ def display(args):
 
     if target is not None:
         target.sendMessage(rest)
+        args.actor.sendMessage("You send " + target.name + ": " + rest)
     else:
         for e in args.actor.instance.connections:
-            e.sendMessage(rest)
+            if e == args.actor:
+                args.actor.sendMessage("You send everyone: " + rest)
+            else:
+                e.sendMessage(rest)
 
     return True
 
@@ -641,7 +678,10 @@ def examine(args):
             top = e.name + "'s Profile"
             args.actor.sendMessage(top)
             args.actor.sendMessage("-"*len(top))
-            args.actor.sendMessage(e.facade)
+            if e.facade is not None and e.facade != "":
+                args.actor.sendMessage(e.facade)
+            else:
+                args.actor.sendMessage(e.name + "'s profile is empty.")
     return True
 
 
@@ -653,7 +693,7 @@ def colors(args):
     """
 
     msg = """    List of colors:
-        \033[1;34mDEFAULT\033[0m
+        \033[0mDEFAULT\033[0m
         \033[1;37mWHITE\033[0m
         \033[0;37mBGRAY\033[0m
         \033[1;30mDGRAY\033[0m
@@ -774,10 +814,16 @@ def brush(args):
         return False
 
     color = args.tokens[1]
-    if color == "reset":
+    if color.lower() not in swatch:
+        color = color[0].upper() + color[1:]
+        args.actor.sendMessage(color + ' is not a valid color. Type "colors" for a list of colors.')
+    elif color == "reset":
         args.actor.instance.stage.resetBrush(args.actor)
+        args.actor.sendMessage("Your brush is now default.")
     else:
         args.actor.instance.stage.setBrush(args.actor, color)
+        args.actor.sendMessage("Your brush is now " + colorfy(color, color) + ".")
+
     return True
 
 
@@ -823,6 +869,7 @@ def look(args):
     if description == "":
         args.actor.sendMessage('There is no "' + args.tokens[1] + '" in the scene.')
     else:
+        args.actor.sendMessage("You look at the " + args.tokens[1] + ".")
         args.actor.sendMessage(description)
     return True
 
