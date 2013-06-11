@@ -51,6 +51,83 @@ def zap(args):
     return True
 
 
+def language(args):
+    """
+    Players may speak in a variety of different languages, so long as
+    they have the OK from the DM. This command allows a player to list
+    the languages that they know, or if they are a DM, register a
+    language to a player. Languages are persistant.
+
+    This ties in heavily with the say/whisper command.
+
+    syntax: language <command>
+
+    List of subcommands and syntax:
+        list:           language list
+        peek:           language peek <target>
+        learn:          language register <target> <language>
+        forget:         language unregister <target> <language>
+    """
+    if len(args.tokens) < 4:
+        if len(args.tokens) == 1:
+            if args.tokens[0] != 'languages':
+                return False
+        elif len(args.tokens) == 2:
+            if args.tokens[1] != 'list':
+                return False
+        elif len(args.tokens) == 3:
+            if args.tokens[1] != 'peek':
+                return False
+        else:
+            return False
+
+    tokens = args.tokens
+
+    # tallies substitution
+    if args.tokens[0] == 'languages':
+        tokens = ['language', 'list']
+
+    subcommand = tokens[1]
+    target = ''
+    language = ''
+    if len(tokens) > 2:
+        target = tokens[2]
+        target = target[0].upper() + target[1:]
+    if len(tokens) > 3:
+        language = tokens[3]
+        language = language.lower()
+
+    if subcommand == 'list':
+        args.actor.sendMessage("You know the following languages: " + str(args.actor.languages))
+
+    elif subcommand == 'peek':
+        for e in args.actor.instance.connections:
+            if e.name.lower() == target.lower():
+                args.actor.sendMessage(target + " knows the following languages: " + str(e.languages))
+
+    elif subcommand == 'learn':
+        for e in args.actor.instance.connections:
+            if e.name.lower() == target.lower():
+                e.languages.append(language)
+                args.actor.sendMessage(target + " now understands the language: " + colorfy(language, "green"))
+                e.sendMessage("You have learned the language: " + colorfy(language, "green"))
+
+    elif subcommand == 'forget':
+        for e in args.actor.instance.connections:
+            if e.name.lower() == target.lower():
+                if language in e.languages:
+                    e.languages.remove(language)
+                    args.actor.sendMessage(target + " has forgotten the language: " + colorfy(language, "green"))
+                    e.sendMessage("You have forgotten the language: " + colorfy(language, "green"))
+                else:
+                    args.actor.sendMessage(target + " does not know the language " + language + ".")
+
+    else:
+        return False
+
+    return True
+
+
 def help(args):
     """
     Check these helpfiles for something.
@@ -668,6 +745,8 @@ def glance(args):
 def examine(args):
     """
     Examines another player's profile.
+
+    syntax: examine <player>
     """
 
     if len(args.tokens) >= 3:

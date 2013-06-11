@@ -10,7 +10,7 @@ class Entity(object):
 
     __slots__ = ("proxy", "name", "instance", "dm", "status", "tallies",
                  "bags", "facade", "tallies_persist", "bags_persist",
-                 "hcode", "salt")
+                 "languages", "hcode", "salt")
 
     def __init__(self, name="", hcode=None, salt=None, proxy=None, instance=None):
         self.proxy = proxy
@@ -30,6 +30,8 @@ class Entity(object):
 
         self.hcode = hcode
         self.salt = salt
+
+        self.languages = []
 
     def sendMessage(self, message):
         if(self.proxy is not None):

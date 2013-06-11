@@ -7,6 +7,8 @@ commandFunctions = {}
 # On first load, initialize the function mappings
 if len(commandFunctions) == 0:
     commandFunctions["say"] = say
+    commandFunctions["language"] = language
+    commandFunctions["languages"] = language
     commandFunctions["logout"] = logout
     commandFunctions["help"] = help
     commandFunctions["who"] = who
@@ -38,6 +40,7 @@ if len(commandFunctions) == 0:
     commandFunctions["hastepaste"] = hastepaste
     commandFunctions["zap"] = zap
     commandFunctions["test"] = test
+
 
 
 def shorthandHandler(args):
