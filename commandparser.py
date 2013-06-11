@@ -42,6 +42,7 @@ def startDispatching():
 def stopDispatching():
     global parsing
     parsing = False
+    event.set()
 
 
 def dispatchForever():
@@ -49,6 +50,8 @@ def dispatchForever():
     while parsing:
         # block until the flag is raised
         event.wait()
+        if not parsing:
+            break
         # get the next command in the queue and execute it
         args = commandsToExecute.pop()
         args = functionmapper.shorthandHandler(args)

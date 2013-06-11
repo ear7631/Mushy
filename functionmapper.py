@@ -35,9 +35,9 @@ commandFunctions["desc"] = description
 commandFunctions["description"] = description
 commandFunctions["exa"] = examine
 commandFunctions["examine"] = examine
-commandFunctions["hastepaste"] = hastepaste
+commandFunctions["hastepaste"] = docshare
+commandFunctions["docshare"] = docshare
 commandFunctions["zap"] = zap
-commandFunctions["test"] = test
 
 
 def shorthandHandler(args):

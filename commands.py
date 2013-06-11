@@ -22,10 +22,6 @@ actor - being object who used the command
 """
 
 
-def catchall(args):
-    return False
-
-
 def zap(args):
     """
     Allows the DM to force-disconnect another user. Can be used if there
@@ -519,6 +515,18 @@ def roll(args):
     try:
         num = int(dice[0])
         sides = int(dice[1])
+        if sides > 100:
+            args.actor.sendMessage("Okay, you show me a physical die with that many sides, and I'll let you roll it.")
+            return True
+        elif sides < 2:
+            args.actor.sendMessage("A die has more sides than THAT!")
+            return True
+        elif num < 1:
+            args.actor.sendMessage("Are you rolling, or what, sir?")
+            return True
+        elif num > 20:
+            args.actor.sendMessage("You can't even fit than many dice in your hand!")
+            return True
     except:
         return False
 
@@ -856,7 +864,7 @@ def sculpt(args):
     To view a list of colors, type "colors".
 
     example:
-        paint rat A little black rat scurries across the floor.
+        sculpt rat A little black rat scurries across the floor.
     """
     if len(args.tokens) < 3:
         return False
@@ -864,12 +872,21 @@ def sculpt(args):
     if not args.actor.dm:
         return False
 
-    stage = args.actor.instance.stage
-    color = stage.getBrush(args.actor)
-    snip = len(args.tokens[0]) + len(args.tokens[1]) + 2
-    stage.paintObject(args.tokens[1], colorfy(args.full[snip:], color))
-    for e in args.actor.instance.connections:
-        e.sendMessage(colorfy(args.actor.name + " sculpts an object into the scene.", "bright red"))
+    if args.tokens[1] == 'remove':
+        tag = args[2]
+        if rag in args.actor.instance.stage.objects:
+            args.actor.instance.stage.eraseObject(tag)
+        else:
+            args.actor.sendMessage("There is no " + tag + " in the scene.")
+
+    else:
+        stage = args.actor.instance.stage
+        color = stage.getBrush(args.actor)
+        snip = len(args.tokens[0]) + len(args.tokens[1]) + 2
+        stage.paintObject(args.tokens[1], colorfy(args.full[snip:], color))
+        for e in args.actor.instance.connections:
+            e.sendMessage(colorfy(args.actor.name + " sculpts an object into the scene.", "bright red"))
+
     return True
 
 
@@ -999,7 +1016,7 @@ def tally(args):
         if tokens[2] == '++':
             tokens = ['tally', 'add', tokens[1]]
         elif tokens[2] == '--':
-            tokens = ['tally', 'remove', tokens[1]]
+            tokens = ['tally', 'sub', tokens[1]]
 
     subcommand = tokens[1]
     tag = ''
@@ -1320,7 +1337,7 @@ def _description(args, text):
     args.actor.sendMessage("Profile saved.")
 
 
-def hastepaste(args):
+def docshare(args):
     """
     This is a command for sharing large text documents with the group.
 
@@ -1331,60 +1348,48 @@ def hastepaste(args):
     This is good for larger documents, because it can be shared with users 
     without spamming their client.
 
-    Syntax: hastepaste [user1] [user2] ...
+    Syntax: docshare [user1] [user2] ...
 
     The DM may specify users to share the document privately
     """
     args.actor.sendMessage("Opening the Mushy editor.")
     editor_instance = editor.Editor(args.actor)
-    editor_instance.launch(callback=_hastepaste, callback_args=args)
+    editor_instance.launch(callback=_docshare, callback_args=args)
     return True
 
 
-def _hastepaste(args, text):
+def _docshare(args, text):
     """
     Callback from hastepaste.
     """
-    req = urllib2.Request("http://hastebin.com/documents", text)
-    response = urllib2.urlopen(req)
-    d = json.loads(response.read())
-    link = "http://hastebin.com/raw/" + d['key']
-    sent = []
-    if len(args.tokens[1:]) > 0:
-        names = args.tokens[1:]
-        for i in range(len(names)):
-            names[i] = names[i].lower()
+    try:
+        req = urllib2.Request("http://hastebin.com/documents", text)
+        response = urllib2.urlopen(req)
+        d = json.loads(response.read())
+        link = "http://hastebin.com/raw/" + d['key']
 
-        for e in args.actor.instance.connections:
-            if e.name.lower() in names:
-                e.sendMessage(colorfy("DM " + args.actor.name + " shares a document with you: " + link, "red"))
-                sent.append(e.name)
-        args.actor.sendMessage(colorfy("You share a document with: " + str(sent), "red"))
-    else:
-        for e in args.actor.instance.connections:
-            e.sendMessage(colorfy("DM " + args.actor.name + " shares a document with the session: " + link, "red"))
+        sent = []
+        if len(args.tokens[1:]) > 0:
+            names = args.tokens[1:]
+            for i in range(len(names)):
+                names[i] = names[i].lower()
 
-
-def test(args):
-    """
-    Testing function for the editor.
-    """
-    args.actor.sendMessage("Opening the Mushy editor.")
-    editor_instance = editor.Editor(args.actor)
-    editor_instance.launch(callback=_test, callback_args=args)
-    return True
-
-
-def _test(args, text):
-    """
-    Testing function callback for the editor.
-    """
-    print text
-    print args
+            for e in args.actor.instance.connections:
+                if e.name.lower() in names:
+                    e.sendMessage(colorfy("DM " + args.actor.name + " shares a document with you: " + link, "red"))
+                    sent.append(e.name)
+            args.actor.sendMessage(colorfy("You share a document with: " + str(sent), "red"))
+        else:
+            for e in args.actor.instance.connections:
+                e.sendMessage(colorfy("DM " + args.actor.name + " shares a document with the session: " + link, "red"))
+    except HTTPError:
+        print "Server: Exception occurred while uploading to hastebin."
+        args.actor.sendMessage("There was an issue with uploading your document to hastebin.")
+        args.actor.sendMessage("Chances are that either hastebin is down, or your document was too large.")
 
 
 # Some commands take in subsequent text on multiple lines.
 # These commands need to be recognized so that they can "hold" an entity's
 # input loop before the next text comes in. These are marked here for now.
 # TODO: Is there a way to simply annotate these functions?
-INPUT_BLOCK = set([description, hastepaste, test])
+INPUT_BLOCK = set([description, docshare])
