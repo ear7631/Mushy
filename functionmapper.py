@@ -2,45 +2,42 @@ from commands import *
 import namedtuple
 
 CommandArgs = namedtuple.namedtuple('CommandArgs', 'name tokens full actor')
+
 commandFunctions = {}
-
-# On first load, initialize the function mappings
-if len(commandFunctions) == 0:
-    commandFunctions["say"] = say
-    commandFunctions["language"] = language
-    commandFunctions["languages"] = language
-    commandFunctions["logout"] = logout
-    commandFunctions["help"] = help
-    commandFunctions["who"] = who
-    commandFunctions["pm"] = pm
-    commandFunctions["whisper"] = whisper
-    commandFunctions["emote"] = emote
-    commandFunctions["ooc"] = ooc
-    commandFunctions["roll"] = roll
-    commandFunctions["hroll"] = roll
-    commandFunctions["display"] = display
-    commandFunctions["mask"] = mask
-    commandFunctions["status"] = status
-    commandFunctions["glance"] = glance
-    commandFunctions["colors"] = colors
-    commandFunctions["paint"] = paint
-    commandFunctions["sculpt"] = sculpt
-    commandFunctions["brush"] = brush
-    commandFunctions["wipe"] = wipe
-    commandFunctions["look"] = look
-    commandFunctions["tally"] = tally
-    commandFunctions["tallies"] = tally
-    commandFunctions["bag"] = bag
-    commandFunctions["bags"] = bag
-    commandFunctions["save"] = save
-    commandFunctions["desc"] = description
-    commandFunctions["description"] = description
-    commandFunctions["exa"] = examine
-    commandFunctions["examine"] = examine
-    commandFunctions["hastepaste"] = hastepaste
-    commandFunctions["zap"] = zap
-    commandFunctions["test"] = test
-
+commandFunctions["say"] = say
+commandFunctions["language"] = language
+commandFunctions["languages"] = language
+commandFunctions["logout"] = logout
+commandFunctions["help"] = help
+commandFunctions["who"] = who
+commandFunctions["pm"] = pm
+commandFunctions["whisper"] = whisper
+commandFunctions["emote"] = emote
+commandFunctions["ooc"] = ooc
+commandFunctions["roll"] = roll
+commandFunctions["hroll"] = roll
+commandFunctions["display"] = display
+commandFunctions["mask"] = mask
+commandFunctions["status"] = status
+commandFunctions["glance"] = glance
+commandFunctions["colors"] = colors
+commandFunctions["paint"] = paint
+commandFunctions["sculpt"] = sculpt
+commandFunctions["brush"] = brush
+commandFunctions["wipe"] = wipe
+commandFunctions["look"] = look
+commandFunctions["tally"] = tally
+commandFunctions["tallies"] = tally
+commandFunctions["bag"] = bag
+commandFunctions["bags"] = bag
+commandFunctions["save"] = save
+commandFunctions["desc"] = description
+commandFunctions["description"] = description
+commandFunctions["exa"] = examine
+commandFunctions["examine"] = examine
+commandFunctions["hastepaste"] = hastepaste
+commandFunctions["zap"] = zap
+commandFunctions["test"] = test
 
 
 def shorthandHandler(args):
