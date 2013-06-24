@@ -4,19 +4,20 @@ import socket
 import threading
 
 import entity
-import session
 import persist
-from commandparser import CommandParser
+import session
+import commandparser
+
 from colorer import colorfy
 
 
 class LoginProxy(threading.Thread):
 
-    def __init__(self, socket, instance):
+    def __init__(self, socket, session):
         threading.Thread.__init__(self)
         self.socket = socket
         self.running = False
-        self.instance = instance
+        self.session = session
 
     def setEntity(self, entity):
         self.entity = entity
@@ -30,22 +31,10 @@ class LoginProxy(threading.Thread):
             pass
 
     def killClone(self, username):
-        for user in self.instance.connections:
-            if not isinstance(user, entity.Entity):
-                continue
-            if username == user.name and user.proxy.running:
-                user.proxy.kill()
-                self.instance.connections.remove(user)
-                return
-        return
-
-    def checkIfOnline(self, username):
-        for user in self.instance.connections:
-            if not isinstance(user, entity.Entity):
-                continue
-            if username == user.name and user.proxy.running:
-                return True
-        return False
+        if username in self.session:
+            clone = self.session.getEntity(username)
+            clone.proxy.kill()
+            del self.session[username]
 
     def run(self):
         try:
@@ -90,7 +79,7 @@ class LoginProxy(threading.Thread):
                     return
 
                 # sanity check to make sure the player is not already connected
-                if self.checkIfOnline(username):
+                if username in self.session:
                     choice = ''
                     while not choice in ('y', 'n'):
                         self.socket.send("Another instance of you is already connected. Kick it and take its place? (y/n) ")
@@ -151,27 +140,20 @@ class LoginProxy(threading.Thread):
             proxy = entity.ClientProxy(self.socket)
             player.hookProxy(proxy)
 
-            # connect player to the instance
-            player.instance = self.instance
-            self.instance.connections.append(player)
+            # connect player to the session
+            player.session = self.session
+            self.session.add(player)
 
             # start the proxy and notify everyone of the new connection
             player.proxy.start()
             player.sendMessage("")
 
-            for e in self.instance.connections:
-                if e == player:
-                    if reconnected:
-                        player.sendMessage(colorfy("[SERVER] You have reconnected.", "bright yellow"))
-                    else:
-                        player.sendMessage(colorfy("[SERVER] You have joined the session.", "bright yellow"))
-                else:
-                    if reconnected:
-                        e.sendMessage(colorfy("[SERVER] " + player.name + " has reconnected.", "bright yellow"))
-                    else:
-                        e.sendMessage(colorfy("[SERVER] " + player.name + " has joined the session.", "bright yellow"))
-
-            if not reconnected:
+            if reconnected:
+                self.session.broadcastExclude(colorfy("[SERVER] " + player.name + " has reconnected.", "bright yellow"), player)
+                player.sendMessage(colorfy("[SERVER] You have reconnected.", "bright yellow"))
+            else:
+                self.session.broadcastExclude(colorfy("[SERVER] " + player.name + " has joined the session.", "bright yellow"), player)
+                player.sendMessage(colorfy("[SERVER] You have joined the session.", "bright yellow"))
                 player.sendMessage(colorfy("[SERVER] You may type 'help' at any time for a list of commands.", 'bright green'))
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -192,12 +174,11 @@ def main():
     print "Server: Initializing profiles."
     persist.initializeProfiles()
 
-    print "Server: Setting up instance."
-    connections = []
-    instance = session.Instance(connections)
+    print "Server: Setting up session."
+    running_session = session.Session()
 
     print "Server: Creating the CommandParser"
-    parser = CommandParser()
+    parser = commandparser.CommandParser()
 
     print "Server: Initialization Complete."
     print "Server: Setting up network communications."
@@ -215,7 +196,7 @@ def main():
             client_socket, address = server_socket.accept()
             print "Server: Accepting connection from " + address[0] + "..."
             # spawn up a client proxy here
-            proxy = LoginProxy(client_socket, instance)
+            proxy = LoginProxy(client_socket, running_session)
             proxy.start()
         except KeyboardInterrupt:
             print ""
@@ -223,7 +204,7 @@ def main():
             server_socket.close()
             parser.kill()
             print "Server: Closing client connections..."
-            for connection in instance.connections:
+            for connection in running_session:
                 connection.proxy.kill()
             done = True
         except:

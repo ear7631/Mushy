@@ -1,10 +1,9 @@
 import sys, inspect, threading, random, urllib2, json
+
 import namedtuple
-import functionmapper
-import commandparser
-import entity
 import persist
 import editor
+
 from colorer import colors as swatch
 from colorer import colorfy
 
@@ -47,15 +46,16 @@ def zap(args):
     elif len(args.tokens) < 2:
         args.actor.sendMessage("Usage: zap <player>")
         return True
-    for e in args.actor.instance.connections:
-        if e.name.lower() == args.tokens[1].lower():
-            try:
-                e.proxy.running = False
-                e.instance.connections.remove(e)
-                e.proxy.kill()
-                args.actor.sendMessage("Disconnected " + e.name + ".")
-            except:
-                args.actor.sendMessage("Error while disconnecting user " + e.name + ".")
+    
+    if args.tokens[1] in args.actor.session:
+        try:
+            target = args.actor.session.getEntity(args.tokens[1])
+            target.proxy.running = False
+            target.session.remove(target)
+            target.proxy.kill()
+            args.actor.sendMessage("Disconnected " + target.name + ".")
+        except:
+            args.actor.sendMessage("Error while disconnecting user " + target.name + ".")
     return True
 
 
@@ -108,27 +108,23 @@ def language(args):
     if subcommand == 'list':
         args.actor.sendMessage("You know the following languages: " + str(args.actor.languages))
 
-    elif subcommand == 'peek':
-        for e in args.actor.instance.connections:
-            if e.name.lower() == target.lower():
-                args.actor.sendMessage(target + " knows the following languages: " + str(e.languages))
+    elif subcommand == 'peek' and target in args.actor.session:
+        e = args.actor.session.getEntity(target)
+        args.actor.sendMessage(target + " knows the following languages: " + str(e.languages))
 
-    elif subcommand == 'learn':
-        for e in args.actor.instance.connections:
-            if e.name.lower() == target.lower():
-                e.languages.append(language)
-                args.actor.sendMessage(target + " now understands the language: " + colorfy(language, "green"))
-                e.sendMessage("You have learned the language: " + colorfy(language, "green"))
+    elif subcommand == 'learn' and target in args.actor.session:
+        e = args.actor.session.getEntity(target)
+        e.languages.append(language)
+        args.actor.sendMessage(target + " now understands the language: " + colorfy(language, "green"))
+        e.sendMessage("You have learned the language: " + colorfy(language, "green"))
 
-    elif subcommand == 'forget':
-        for e in args.actor.instance.connections:
-            if e.name.lower() == target.lower():
-                if language in e.languages:
-                    e.languages.remove(language)
-                    args.actor.sendMessage(target + " has forgotten the language: " + colorfy(language, "green"))
-                    e.sendMessage("You have forgotten the language: " + colorfy(language, "green"))
-                else:
-                    args.actor.sendMessage(target + " does not know the language " + language + ".")
+    elif subcommand == 'forget' and target in args.actor.session:
+        if language in e.languages:
+            e.languages.remove(language)
+            args.actor.sendMessage(target + " has forgotten the language: " + colorfy(language, "green"))
+            e.sendMessage("You have forgotten the language: " + colorfy(language, "green"))
+        else:
+            args.actor.sendMessage(target + " does not know the language " + language + ".")
 
     else:
         return False
@@ -139,10 +135,12 @@ def language(args):
 def help(args):
     """
     Check these helpfiles for something.
-    
+
     syntax: help <subject>
             subject - the subject or command which you want to check for help
     """
+    # This would normally be circular, but this is an exceptional case
+    import functionmapper
 
     # generate the docstring mapping first
     docs = {}
@@ -218,14 +216,14 @@ def _speak(args, second_tense, third_tense, speak_color):
 
         # see if there's a target in here
         if len(rest_tokens) >= 3 and rest_tokens[0] == 'to':
-            target_entity = args.actor.instance.getEntity(rest_tokens[1])
+            target_entity = args.actor.session.getEntity(rest_tokens[1])
             if target_entity is not None:
                 full = full[len(rest_tokens[0]) + len(rest_tokens[1]) + 2:]
                 rest_tokens = rest_tokens[2:]
 
     # CASE 2: Match on SAY TO
     elif len(rest_tokens) >= 3 and rest_tokens[0] == 'to':
-        target_entity = args.actor.instance.getEntity(rest_tokens[1])
+        target_entity = args.actor.session.getEntity(rest_tokens[1])
 
         if target_entity is not None:
             full = full[len(rest_tokens[0]) + len(rest_tokens[1]) + 2:]
@@ -262,7 +260,7 @@ def _speak(args, second_tense, third_tense, speak_color):
             target_entity.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' to you, "' + full + '"', speak_color))
     # Say stuff to everyone
     else:
-        for e in args.actor.instance.connections:
+        for e in args.actor.session:
             # in a language
             if lang is not None:
                 if e == args.actor:
@@ -350,12 +348,12 @@ def pm(args):
     if not len(args.tokens) >= 3:
         return False
 
-    for e in args.actor.instance.connections:
-        if e.name.lower() == args.tokens[1].lower():
-            e.sendMessage(colorfy("[" + args.actor.name + ">>] " +
-                          args.full[len(args.tokens[0] + " " + args.tokens[1] + " "):], 'purple'))
-            args.actor.sendMessage(colorfy("[>>" + e.name + "] " +
-                                   args.full[len(args.tokens[0] + " " + args.tokens[1] + " "):], 'purple'))
+    if args.tokens[1] in args.actor.session:
+        target = args.actor.session.getEntity(args.tokens[1])
+        target.sendMessage(colorfy("[" + args.actor.name + ">>] " +
+                           args.full[len(args.tokens[0] + " " + args.tokens[1] + " "):], 'purple'))
+        args.actor.sendMessage(colorfy("[>>" + target.name + "] " +
+                               args.full[len(args.tokens[0] + " " + args.tokens[1] + " "):], 'purple'))
     return True
 
 
@@ -366,7 +364,7 @@ def who(args):
     syntax: who
     """
     msg = colorfy("Currently connected players:\n", "bright blue")
-    for e in args.actor.instance.connections:
+    for e in args.actor.session:
         name = colorfy(e.name, "bright blue")
         if e.dm:
             name = name + colorfy(" (DM)", "bright red")
@@ -381,15 +379,13 @@ def logout(args):
 
     syntax: logout
     """
-    for e in args.actor.instance.connections:
-        if e == args.actor:
-            args.actor.sendMessage(colorfy("[SERVER] You have quit the session.", "bright yellow"))
-        else:
-            e.sendMessage(colorfy("[SERVER] " + args.actor.name + " has quit the session.", "bright yellow"))
+    for e in args.actor.session:
+        args.actor.sendMessage(colorfy("[SERVER] You have quit the session.", "bright yellow"))
+        args.actor.session.broadcastExclude(colorfy("[SERVER] " + args.actor.name + " has quit the session.", "bright yellow"), args.actor)
     persist.saveEntity(args.actor)
     try:
         args.actor.proxy.running = False
-        args.actor.instance.connections.remove(args.actor)
+        args.actor.session.remove(args.actor)
         args.actor.proxy.kill()
     except:
         return True
@@ -430,10 +426,7 @@ def emote(args):
         return False
 
     rest = rest.replace(';', args.actor.name)
-
-    for e in args.actor.instance.connections:
-        e.sendMessage(colorfy(marking + rest, "dark gray"))
-
+    args.actor.session.broadcast(colorfy(marking + rest, "dark gray"))
     return True
 
 
@@ -466,9 +459,7 @@ def ooc(args):
     marking = colorfy(marking, "bright red")
 
     rest = args.full[len(args.name + " "):]
-
-    for e in args.actor.instance.connections:
-        e.sendMessage(marking + rest)
+    args.actor.session.broadcast(marking + rest)
 
     return True
 
@@ -556,11 +547,14 @@ def roll(args):
     for i in range(num):
         dice.append(random.randint(1, sides))
 
-    for e in args.actor.instance.connections:
-        if visible or e == args.actor:
-            e.sendMessage(marking + args.actor.name + " rolls " + str(num) + "d" + str(sides) + ".")
-            for die in dice:
-                e.sendMessage("  " + str(die))
+    msg = marking + args.actor.name + " rolls " + str(num) + "d" + str(sides) + "."
+    for die in dice:
+        msg += "\n  " + str(die)
+
+    if visible:
+        args.actor.session.broadcast(msg)
+    else:
+        args.actor.sendMessage(msg)
 
     return True
 
@@ -588,7 +582,8 @@ def mask(args):
         $Nameless say Who... who am I?
         >> Nameless says, "Who... who am I?"
     """
-
+    # Exceptional case where we need this for husk-command-trickery
+    import commandparser, entity
     if len(args.tokens) < 3:
         return False
 
@@ -596,13 +591,9 @@ def mask(args):
         args.actor.sendMessage("Whoa there... This is a DM power! Bad!")
         return True
 
-    husk = entity.Entity(name=args.tokens[1][0].upper() + args.tokens[1][1:], instance=args.actor.instance)
-    new_name = args.tokens[2]
-    new_tokens = args.tokens[2:]
+    husk = entity.Entity(name=args.tokens[1][0].upper() + args.tokens[1][1:], session=args.actor.session)
     new_full = args.full[len(args.tokens[0] + " " + args.tokens[1] + " "):]
-    new_args = CommandArgs(name=new_name, tokens=new_tokens, full=new_full, actor=husk)
-
-    commandparser.queueCommand(new_args)
+    commandparser.CommandParser().parseLine(new_full, husk)
     return True
 
 
@@ -657,13 +648,9 @@ def display(args):
             if len(args.tokens) < 6:
                 return False
             target_name = args.tokens[4]
-
-            for e in args.actor.instance.connections:
-                if e.name.lower() == target_name.lower():
-                    target = e
-
-            if target is None:
+            if target_name not in args.actor.session:
                 return False
+            target = args.actor.session.getEntity(target_name)
             rest = rest[len(args.tokens[3] + " " + args.tokens[4] + " "):]
     else:
         rest = args.full[len(args.tokens[0] + " "):]
@@ -674,11 +661,8 @@ def display(args):
         target.sendMessage(rest)
         args.actor.sendMessage("You send " + target.name + ": " + rest)
     else:
-        for e in args.actor.instance.connections:
-            if e == args.actor:
-                args.actor.sendMessage("You send everyone: " + rest)
-            else:
-                e.sendMessage(rest)
+        args.actor.sendMessage("You send everyone: " + rest)
+        args.actor.session.broadcastExclude(rest, args.actor)
 
     return True
 
@@ -720,15 +704,10 @@ def status(args):
         status = status + "."
 
     args.actor.status = status
-
     status = status[0].lower() + status[1:]
 
-    for e in args.actor.instance.connections:
-        if e == args.actor:
-            e.sendMessage(colorfy(">You are " + status, "dark gray"))
-        else:
-            e.sendMessage(colorfy(">" + args.actor.name + " is " + status, "dark gray"))
-
+    args.actor.sendMessage(colorfy(">You are " + status, "dark gray"))
+    args.actor.session.boardcastExclude(colorfy(">" + args.actor.name + " is " + status, "dark gray"), args.actor)
     return True
 
 
@@ -742,16 +721,15 @@ def glance(args):
     if len(args.tokens) < 2:
         return False
 
-    for e in args.actor.instance.connections:
-        if e.name.lower() == args.tokens[1].lower():
-            args.actor.sendMessage("You glance at " + e.name + ".")
-            if e.status == "":
-                return True
-            status = e.status[0].lower() + e.status[1:]
-            args.actor.sendMessage("  " + e.name + " is " + colorfy(status, "dark gray"))
+    target = args.actor.session.getEntity(args.tokens[1])
+    if target is not None:
+        args.actor.sendMessage("You glance at " + e.name + ".")
+        if e.status == "":
             return True
-
-    args.actor.sendMessage('There is no player "' + args.tokens[1] + '" here.')
+        status = e.status[0].lower() + e.status[1:]
+        args.actor.sendMessage("  " + e.name + " is " + colorfy(status, "dark gray"))
+    else:
+        args.actor.sendMessage('There is no player "' + args.tokens[1] + '" here.')
     return True
 
 
@@ -765,15 +743,15 @@ def examine(args):
     if len(args.tokens) >= 3:
         return False
 
-    for e in args.actor.instance.connections:
-        if e.name.lower() == args.tokens[1].lower():
-            top = e.name + "'s Profile"
-            args.actor.sendMessage(top)
-            args.actor.sendMessage("-"*len(top))
-            if e.facade is not None and e.facade != "":
-                args.actor.sendMessage(e.facade)
-            else:
-                args.actor.sendMessage(e.name + "'s profile is empty.")
+    if args.tokens[1] in args.actor.session:
+        target = args.actor.session.getEntity(tokens[1])
+        top = e.name + "'s Profile"
+        args.actor.sendMessage(top)
+        args.actor.sendMessage("-"*len(top))
+        if e.facade is not None and e.facade != "":
+            args.actor.sendMessage(e.facade)
+        else:
+            args.actor.sendMessage(e.name + "'s profile is empty.")
     return True
 
 
@@ -833,19 +811,17 @@ def paint(args):
         return False
 
     tokens = args.tokens
-    stage = args.actor.instance.stage
+    stage = args.actor.session.stage
     color = stage.getBrush(args.actor)
     snip = len(tokens[0]) + len(tokens[1]) + 2
 
     if tokens[1] == "title":
         stage.paintSceneTitle(colorfy(args.full[snip:], color))
-        for e in args.actor.instance.connections:
-            e.sendMessage(colorfy(args.actor.name + " gives the scene a name.", "bright red"))
+        args.actor.session.broadcast(colorfy(args.actor.name + " gives the scene a name.", "bright red"))
 
     elif tokens[1] == "body":
         stage.paintSceneBody(colorfy(args.full[snip:], color))
-        for e in args.actor.instance.connections:
-            e.sendMessage(colorfy(args.actor.name + " paints the scene.", "bright red"))
+        args.actor.session.broadcast(colorfy(args.actor.name + " paints the scene.", "bright red"))
 
     else:
         return False
@@ -879,18 +855,17 @@ def sculpt(args):
 
     if args.tokens[1] == 'remove':
         tag = args[2]
-        if rag in args.actor.instance.stage.objects:
-            args.actor.instance.stage.eraseObject(tag)
+        if rag in args.actor.session.stage.objects:
+            args.actor.session.stage.eraseObject(tag)
         else:
             args.actor.sendMessage("There is no " + tag + " in the scene.")
 
     else:
-        stage = args.actor.instance.stage
+        stage = args.actor.session.stage
         color = stage.getBrush(args.actor)
         snip = len(args.tokens[0]) + len(args.tokens[1]) + 2
         stage.paintObject(args.tokens[1], colorfy(args.full[snip:], color))
-        for e in args.actor.instance.connections:
-            e.sendMessage(colorfy(args.actor.name + " sculpts an object into the scene.", "bright red"))
+        args.actor.session.broadcast(colorfy(args.actor.name + " sculpts an object into the scene.", "bright red"))
 
     return True
 
@@ -919,10 +894,10 @@ def brush(args):
         color = color[0].upper() + color[1:]
         args.actor.sendMessage(color + ' is not a valid color. Type "colors" for a list of colors.')
     elif color == "reset":
-        args.actor.instance.stage.resetBrush(args.actor)
+        args.actor.session.stage.resetBrush(args.actor)
         args.actor.sendMessage("Your brush is now default.")
     else:
-        args.actor.instance.stage.setBrush(args.actor, color)
+        args.actor.session.stage.setBrush(args.actor, color)
         args.actor.sendMessage("Your brush is now " + colorfy(color, color) + ".")
 
     return True
@@ -937,12 +912,10 @@ def wipe(args):
     if not args.actor.dm:
         return False
 
-    stage = args.actor.instance.stage
+    stage = args.actor.session.stage
     stage.wipeScene()
     stage.wipeObjects()
-
-    for e in args.actor.instance.connections:
-        e.sendMessage(colorfy(args.actor.name + " wipes the whole scene.", "bright red"))
+    args.actor.session.broadcast(colorfy(args.actor.name + " wipes the whole scene.", "bright red"))
 
     return True
 
@@ -956,7 +929,7 @@ def look(args):
 
     To view a list of objects in the scene, simply use look without arguments.
     """
-    stage = args.actor.instance.stage
+    stage = args.actor.session.stage
 
     if len(args.tokens) == 1:
         scene = stage.viewScene()
@@ -1085,16 +1058,15 @@ def tally(args):
     elif subcommand == 'share' or subcommand == 'show' or subcommand == 'display':
         if tag in args.actor.tallies:
             if len(tokens) > 3:
-                for e in args.actor.instance.connections:
-                    if e.name.lower() == tokens[3].lower():
-                        e.sendMessage(args.actor.name + " shares a tally with you: [" +
-                                      colorfy(tag, 'white') + ": " + colorfy(str(args.actor.tallies[tag]), 'cyan') + "]")
-                        args.actor.sendMessage("You share tally " + tag + " with " + tokens[3] + ": [" +
-                                               colorfy(tag, 'white') + ": " + colorfy(str(args.actor.tallies[tag]), 'cyan') + "]")
+                if tokens[3] in args.actor.session:
+                    target = args.actor.session.getEntity(tokens[3])
+                    target.sendMessage(args.actor.name + " shares a tally with you: [" +
+                                       colorfy(tag, 'white') + ": " + colorfy(str(args.actor.tallies[tag]), 'cyan') + "]")
+                    args.actor.sendMessage("You share tally " + tag + " with " + tokens[3] + ": [" +
+                                           colorfy(tag, 'white') + ": " + colorfy(str(args.actor.tallies[tag]), 'cyan') + "]")
             else:
-                for e in args.actor.instance.connections:
-                    e.sendMessage(args.actor.name + " shares a tally: [" +
-                                  colorfy(tag, 'white') + ": " + colorfy(str(args.actor.tallies[tag]), 'cyan') + "]")
+                args.actor.session.broadcast(args.actor.name + " shares a tally: [" +
+                                             colorfy(tag, 'white') + ": " + colorfy(str(args.actor.tallies[tag]), 'cyan') + "]")
         else:
             args.actor.sendMessage("Tally " + tag + " does not exist.")
 
@@ -1236,29 +1208,27 @@ def bag(args):
 
         if tag == 'all':
             if len(tokens) > 3:
-                for e in args.actor.instance.connections:
-                    if e.name.lower() == tokens[3].lower():
-                        e.sendMessage(args.actor.name + " shares some bags with you: ")
-                        args.actor.sendMessage("You share your bags with " + tokens[3] + ".")
-                        for key in keys:
-                            e.sendMessage("    " + key + ": " + str(args.actor.bags[key]))
+                if tokens[3] in args.actor.session:
+                    target = args.actor.session.getEntity(tokens[3])
+                    target.sendMessage(args.actor.name + " shares some bags with you: ")
+                    args.actor.sendMessage("You share your bags with " + tokens[3] + ".")
+                    for key in keys:
+                        target.sendMessage("    " + key + ": " + str(args.actor.bags[key]))
             else:
                 args.actor.sendMessage("You share your bags.")
-                for e in args.actor.instance.connections:
-                    if e.name.lower() == args.actor.name.lower():
-                        continue
-                    e.sendMessage(args.actor.name + " shares some bags:")
-                    for key in keys:
-                        e.sendMessage("    " + key + ": " + str(args.actor.bags[key]))
+                msg = args.actor.name + " shares some bags:"
+                for key in keys:
+                    msg += "\n    " + key + ": " + str(args.actor.bags[key])
+                args.actor.session.broadcastExclude(msg, args.actor)
+
         elif tag in args.actor.bags:
             if len(tokens) > 3:
-                for e in args.actor.instance.connections:
-                    if e.name.lower() == tokens[3].lower():
-                        e.sendMessage(args.actor.name + " shares a bag (" + tag + ") with you: " + str(args.actor.bags[tag]))
-                        args.actor.sendMessage("You share a bag (" + tag + ") with " + tokens[3] + ".")
+                if tokens[3] in args.actor.session:
+                    target = args.actor.session.getEntity(tokens[3])
+                    target.sendMessage(args.actor.name + " shares a bag (" + tag + ") with you: " + str(args.actor.bags[tag]))
+                    args.actor.sendMessage("You share a bag (" + tag + ") with " + tokens[3] + ".")
             else:
-                for e in args.actor.instance.connections:
-                    e.sendMessage(args.actor.name + " shares a bag (" + tag + "): " + str(args.actor.bags[tag]))
+                args.actor.session.broadcast(args.actor.name + " shares a bag (" + tag + "): " + str(args.actor.bags[tag]))
         else:
             args.actor.sendMessage("Bag " + tag + " does not exist.")
 
@@ -1381,14 +1351,13 @@ def _docshare(args, text):
             for i in range(len(names)):
                 names[i] = names[i].lower()
 
-            for e in args.actor.instance.connections:
-                if e.name.lower() in names:
-                    e.sendMessage(colorfy("DM " + args.actor.name + " shares a document with you: " + link, "red"))
-                    sent.append(e.name)
+            for name in names:
+                target = args.actor.session.getEntity(name)
+                target.sendMessage(colorfy("DM " + args.actor.name + " shares a document with you: " + link, "red"))
+                sent.append(target.name)
             args.actor.sendMessage(colorfy("You share a document with: " + str(sent), "red"))
         else:
-            for e in args.actor.instance.connections:
-                e.sendMessage(colorfy("DM " + args.actor.name + " shares a document with the session: " + link, "red"))
+            args.actor.session.broadcast(colorfy("DM " + args.actor.name + " shares a document with the session: " + link, "red"))
     except HTTPError:
         print "Server: Exception occurred while uploading to hastebin."
         args.actor.sendMessage("There was an issue with uploading your document to hastebin.")

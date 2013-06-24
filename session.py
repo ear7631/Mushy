@@ -1,26 +1,46 @@
-from stage import Stage
+import stage
+import entity
 
 
-class Instance(object):
+class Session(object):
 
     __slots__ = ("connections", "stage", "entity_map")
 
-    def __init__(self, connections):
-        self.connections = connections
-        self.stage = Stage()
+    def __init__(self):
+        self.connections = {}
+        self.stage = stage.Stage()
 
-    def getEntity(self, client_name):
-        for connection in self.connections:
-            if connection.name.lower() == client_name:
-                return connection
+    def add(self, player):
+        self.connections[player.name.lower()] = player
+
+    def remove(self, player):
+        key = player.name.lower()
+        if key in self.connections:
+            del self.connections[key]
+
+    def getEntity(self, username):
+        username = username.lower()
+        if username in self.connections:
+            return self.connections[username]
         return None
 
     def broadcast(self, message):
-        for connection in self.connections:
+        for connection in self.connections.values():
             connection.sendMessage(message)
 
     def broadcastExclude(self, message, ignored):
-        for connection in self.connections:
+        for connection in self.connections.values():
             if connection == ignored:
                 continue
             connection.sendMessage(message)
+
+    def __contains__(self, key):
+        # Can take in a name or an entity object
+        if isinstance(key, str):
+            key = key.lower()
+        elif isinstance(key, entity.Entity):
+            key = key.name.lower()
+        return key in self.connections
+
+    def __iter__(self):
+        return iter(self.connections.values())

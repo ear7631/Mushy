@@ -1,10 +1,9 @@
 import threading
 import time
 import traceback
-
-import functionmapper
 import namedtuple
 import commands
+import functionmapper
 
 
 CommandArgs = namedtuple.namedtuple('CommandArgs', 'name tokens full actor')

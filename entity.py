@@ -8,16 +8,16 @@ from commandparser import CommandParser
 
 
 class Entity(object):
-    __slots__ = ("proxy", "name", "instance", "dm", "status", "tallies",
+    __slots__ = ("proxy", "name", "session", "dm", "status", "tallies",
                  "bags", "facade", "tallies_persist", "bags_persist",
                  "languages", "hcode", "salt")
 
-    def __init__(self, name="", hcode=None, salt=None, proxy=None, instance=None):
+    def __init__(self, name="", hcode=None, salt=None, proxy=None, session=None):
         self.proxy = proxy
         if self.proxy is not None:
             self.proxy.setEntity(self)
         self.name = name
-        self.instance = instance
+        self.session = session
         self.dm = False
         self.status = ""
 

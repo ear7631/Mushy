@@ -1,46 +1,46 @@
-from commands import *
+import commands
 import namedtuple
 
 CommandArgs = namedtuple.namedtuple('CommandArgs', 'name tokens full actor')
 
 commandFunctions = {}
-commandFunctions["say"] = say
-commandFunctions["whisper"] = whisper
-commandFunctions["yell"] = yell
-commandFunctions["shout"] = yell
-commandFunctions["scream"] = yell
-commandFunctions["language"] = language
-commandFunctions["languages"] = language
-commandFunctions["logout"] = logout
-commandFunctions["help"] = help
-commandFunctions["who"] = who
-commandFunctions["pm"] = pm
-commandFunctions["emote"] = emote
-commandFunctions["ooc"] = ooc
-commandFunctions["roll"] = roll
-commandFunctions["hroll"] = roll
-commandFunctions["display"] = display
-commandFunctions["mask"] = mask
-commandFunctions["status"] = status
-commandFunctions["glance"] = glance
-commandFunctions["colors"] = colors
-commandFunctions["paint"] = paint
-commandFunctions["sculpt"] = sculpt
-commandFunctions["brush"] = brush
-commandFunctions["wipe"] = wipe
-commandFunctions["look"] = look
-commandFunctions["tally"] = tally
-commandFunctions["tallies"] = tally
-commandFunctions["bag"] = bag
-commandFunctions["bags"] = bag
-commandFunctions["save"] = save
-commandFunctions["desc"] = description
-commandFunctions["description"] = description
-commandFunctions["exa"] = examine
-commandFunctions["examine"] = examine
-commandFunctions["hastepaste"] = docshare
-commandFunctions["docshare"] = docshare
-commandFunctions["zap"] = zap
+commandFunctions["say"] = commands.say
+commandFunctions["whisper"] = commands.whisper
+commandFunctions["yell"] = commands.yell
+commandFunctions["shout"] = commands.yell
+commandFunctions["scream"] = commands.yell
+commandFunctions["language"] = commands.language
+commandFunctions["languages"] = commands.language
+commandFunctions["logout"] = commands.logout
+commandFunctions["help"] = commands.help
+commandFunctions["who"] = commands.who
+commandFunctions["pm"] = commands.pm
+commandFunctions["emote"] = commands.emote
+commandFunctions["ooc"] = commands.ooc
+commandFunctions["roll"] = commands.roll
+commandFunctions["hroll"] = commands.roll
+commandFunctions["display"] = commands.display
+commandFunctions["mask"] = commands.mask
+commandFunctions["status"] = commands.status
+commandFunctions["glance"] = commands.glance
+commandFunctions["colors"] = commands.colors
+commandFunctions["paint"] = commands.paint
+commandFunctions["sculpt"] = commands.sculpt
+commandFunctions["brush"] = commands.brush
+commandFunctions["wipe"] = commands.wipe
+commandFunctions["look"] = commands.look
+commandFunctions["tally"] = commands.tally
+commandFunctions["tallies"] = commands.tally
+commandFunctions["bag"] = commands.bag
+commandFunctions["bags"] = commands.bag
+commandFunctions["save"] = commands.save
+commandFunctions["desc"] = commands.description
+commandFunctions["description"] = commands.description
+commandFunctions["exa"] = commands.examine
+commandFunctions["examine"] = commands.examine
+commandFunctions["hastepaste"] = commands.docshare
+commandFunctions["docshare"] = commands.docshare
+commandFunctions["zap"] = commands.zap
 
 
 def shorthandHandler(args):
