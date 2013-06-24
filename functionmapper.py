@@ -5,13 +5,16 @@ CommandArgs = namedtuple.namedtuple('CommandArgs', 'name tokens full actor')
 
 commandFunctions = {}
 commandFunctions["say"] = say
+commandFunctions["whisper"] = whisper
+commandFunctions["yell"] = yell
+commandFunctions["shout"] = yell
+commandFunctions["scream"] = yell
 commandFunctions["language"] = language
 commandFunctions["languages"] = language
 commandFunctions["logout"] = logout
 commandFunctions["help"] = help
 commandFunctions["who"] = who
 commandFunctions["pm"] = pm
-commandFunctions["whisper"] = whisper
 commandFunctions["emote"] = emote
 commandFunctions["ooc"] = ooc
 commandFunctions["roll"] = roll

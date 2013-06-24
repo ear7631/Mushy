@@ -21,6 +21,18 @@ full - full input, untokenized
 actor - being object who used the command
 """
 
+# These functions need to be identified for the bypass flag
+INPUT_BLOCK = set()
+
+
+def block(func):
+    """
+    Decorate functions that require input blocking immediately after execution.
+    """
+    if func not in INPUT_BLOCK:
+        INPUT_BLOCK.add(func)
+    return func
+
 
 def zap(args):
     """
@@ -171,29 +183,129 @@ def help(args):
     return True
 
 
+def _speak(args, second_tense, third_tense, speak_color):
+    """
+    Internal function used by say, whisper, and yell.
+
+    second_tense - You say/whisper/yell
+    third_tense - He says/whispers/yells
+    """
+    if len(args.tokens) < 2:
+        return False
+
+    full = args.full
+    marking = ""
+    rest = ""
+    msg = ""
+
+    # Get rid of the "say" command token
+    rest_tokens = args.tokens[1:]
+    full = full[len(args[0]) + 1:]
+
+    target_entity = None
+    lang = None
+
+    # CASE 1: Match on SAY IN
+    if rest_tokens[0] == 'in' and len(rest_tokens) >= 3:
+        lang = rest_tokens[1].lower()
+
+        if lang in args.actor.languages:
+            # cut out the "in lang" portion
+            full = full[len(rest_tokens[0]) + len(rest_tokens[1]) + 2:]
+            rest_tokens = rest_tokens[2:]
+        else:
+            lang = None
+
+        # see if there's a target in here
+        if len(rest_tokens) >= 3 and rest_tokens[0] == 'to':
+            target_entity = args.actor.instance.getEntity(rest_tokens[1])
+            if target_entity is not None:
+                full = full[len(rest_tokens[0]) + len(rest_tokens[1]) + 2:]
+                rest_tokens = rest_tokens[2:]
+
+    # CASE 2: Match on SAY TO
+    elif len(rest_tokens) >= 3 and rest_tokens[0] == 'to':
+        target_entity = args.actor.instance.getEntity(rest_tokens[1])
+
+        if target_entity is not None:
+            full = full[len(rest_tokens[0]) + len(rest_tokens[1]) + 2:]
+            rest_tokens = rest_tokens[2:]
+
+        # Check for language
+        if len(rest_tokens) >= 3 and rest_tokens[0] == 'in':
+            lang = rest_tokens[1].lower()
+
+            if lang in args.actor.languages:
+                # cut out the "in lang" portion
+                full = full[len(rest_tokens[0]) + len(rest_tokens[1]) + 2:]
+                rest_tokens = rest_tokens[2:]
+            else:
+                lang = None
+
+    # Properize the remaining text
+    full = full[0].upper() + full[1:]
+    if full[-1] not in ('.', '!', '?'):
+        full = full + '.'
+
+    # Say stuff to a target
+    if target_entity is not None:
+        # in a language
+        if lang is not None:
+            args.actor.sendMessage(colorfy('You ' + second_tense + ' to ' + target_entity.name + ' in ' + lang + ', "' + full + '"', speak_color))
+            if lang in target_entity.languages:
+                target_entity.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' to you in ' + lang + ', "' + full + '"', speak_color))
+            else:
+                target_entity.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' something to you in ' + lang + '.', speak_color))
+        # common
+        else:
+            args.actor.sendMessage(colorfy('You ' + second_tense + ' to ' + target_entity.name + ', "' + full + '"', speak_color))
+            target_entity.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' to you, "' + full + '"', speak_color))
+    # Say stuff to everyone
+    else:
+        for e in args.actor.instance.connections:
+            # in a language
+            if lang is not None:
+                if e == args.actor:
+                    e.sendMessage(colorfy('You ' + second_tense + ' in ' + lang + ', "' + full + '"', speak_color))
+                elif lang in e.languages:
+                    e.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' in ' + lang + ', "' + full + '"', speak_color))
+                else:
+                    e.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' something in ' + lang + '.', speak_color))
+            # common
+            else:
+                if e == args.actor:
+                    e.sendMessage(colorfy('You ' + second_tense + ', "' + full + '"', speak_color))
+                else:
+                    e.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ', "' + full + '"', speak_color))
+
+    return True
+
+
 def say(args):
     """
     Say something out loud, in character. Unless otherwise specified, things
     are said in common.
 
-    syntax: say [-l <language>] [-t <target>] <message>
-            language - specific language to speak in
-            target - specific target to speak to
-            someone - someone you're speaking to
-            message - What you would like to say
+    syntax: say [modifiers] <message>
+
+    Modifiers can be lanaguage, or target. These are expressed naturally
+    and the order does not matter. See below for examples
 
     examples:
         say hello
         >> Eitan says, "Hello."
 
-        say -l elven "such a snob"
-        >> [in elven] Eitan says, "Such a snob."
+        say in elven "such a snob"
+        >> Eitan says in elven, "Such a snob."
 
-        say -t king Hello your majesty.
-        >> [to king] Eitan says, "Hello your majesty."
+        say to king Hello your majesty.
+        >> Eitan says to King, "Hello your majesty."
 
-        say -l dwarven -t Gimli Sup brosef?
-        >> [in dwarven to Gimli] Eitan says, "Sup, brosef?"
+        say in dwarven to Gimli Sup brosef?
+        >> Eitan says to Gimli in dwarven, "Sup, brosef?"
+
+        say to Legolas in elven You're one pretty elf!
+        >> Eitan says to Legolas in elven, "You're one pretty elf!"
 
 
     Alternatively, as a shorthand, you may start the say command with the "'" token (no space).
@@ -202,57 +314,27 @@ def say(args):
         'Hello, everyone!
         >>Eitan says, "Hello, everyone!"
     """
-    if len(args.tokens) < 2:
-        return False
+    return _speak(args, 'say', 'says', 'white')
 
-    marking = ""
-    rest = ""
-    msg = ""
 
-    if args.tokens[1] == '-l':
+def whisper(args):
+    """
+    Works just like "say", just with whisper flavor. For more info,
+    check "help say".
 
-        if not len(args.tokens) >= 4:
-            return False
-        marking = marking + "[in " + args.tokens[2]
+    syntax: whisper [modifiers] <message>
+    """
+    return _speak(args, 'whisper', 'whispers', 'dgray')
 
-        if args.tokens[3] == '-t':
-            if not len(args.tokens) >= 6:
-                return False
-            marking = marking + " to " + args.tokens[4]
-            rest = args.full[len(args.tokens[:5]):]
-            rest = args.full[len(args.tokens[0] + " " + args.tokens[1] + " " + args.tokens[2]
-                                 + " " + args.tokens[3] + " " + args.tokens[4] + " "):]
-        else:
-            rest = args.full[len(args.tokens[0] + " " + args.tokens[1] + " " + args.tokens[2] + " "):]
 
-        marking = marking + "] "
+def yell(args):
+    """
+    Works just like "say", just with yell flavor. For more info,
+    check "help say".
 
-    elif args.tokens[1] == '-t':
-
-        if not len(args.tokens) >= 4:
-            return False
-
-        marking = marking + "[to " + args.tokens[2]
-        rest = args.full[len(args.tokens[0] + " " + args.tokens[1] + " " + args.tokens[2] + " "):]
-        marking = marking + "] "
-
-    if rest == "":
-        msg = args.full[len(args.tokens[0]) + 1:]
-    else:
-        msg = rest
-
-    msg = msg[0].upper() + msg[1:]
-    if msg[-1] not in ('.', '!', '?'):
-        msg = msg + '.'
-
-    marking = colorfy(marking, 'yellow')
-    for e in args.actor.instance.connections:
-        if e == args.actor:
-            e.sendMessage(marking + colorfy('You say, "' + msg + '"', "white"))
-        else:
-            e.sendMessage(marking + colorfy(args.actor.name + ' says, "' + msg + '"', "white"))
-
-    return True
+    syntax: yell [modifiers] <message>
+    """
+    return _speak(args, 'yell', 'yells', 'byellow')
 
 
 def pm(args):
@@ -274,83 +356,6 @@ def pm(args):
                           args.full[len(args.tokens[0] + " " + args.tokens[1] + " "):], 'purple'))
             args.actor.sendMessage(colorfy("[>>" + e.name + "] " +
                                    args.full[len(args.tokens[0] + " " + args.tokens[1] + " "):], 'purple'))
-    return True
-
-
-def whisper(args):
-    """
-    Say something out loud, in character.
-
-    syntax: whisper [-l <language>] [-t <target>] <message>
-            language - specific language to speak in
-            target - specific target to speak to
-            someone - someone you're speaking to
-            message - What you would like to say
-
-    examples:
-        whisper hello
-        >> Eitan whispers, "Hello."
-
-        whisper -l elven "such a snob"
-        >> [in elven] Eitan whispers, "Such a snob."
-
-        whisper -t king Hello your majesty.
-        >> [to king] Eitan whispers, "Hello your majesty."
-
-        whisper -l dwarven -t Gimli Sup brosef?
-        >> [in dwarven to Gimli] Eitan whispers, "Sup, brosef?"
-    """
-    if len(args.tokens) < 2:
-        return False
-
-    marking = ""
-    rest = ""
-    msg = ""
-
-    if args.tokens[1] == '-l':
-
-        if not len(args.tokens) >= 4:
-            return False
-        marking = marking + "[in " + args.tokens[2]
-
-        if args.tokens[3] == '-t':
-            if not len(args.tokens) >= 6:
-                return False
-            marking = marking + " to " + args.tokens[4]
-            rest = args.full[len(args.tokens[:5]):]
-            rest = args.full[len(args.tokens[0] + " " + args.tokens[1] + " " + args.tokens[2]
-                                 + " " + args.tokens[3] + " " + args.tokens[4] + " "):]
-        else:
-            rest = args.full[len(args.tokens[0] + " " + args.tokens[1] + " " + args.tokens[2] + " "):]
-
-        marking = marking + "] "
-
-    elif args.tokens[1] == '-t':
-
-        if not len(args.tokens) >= 4:
-            return False
-
-        marking = marking + "[to " + args.tokens[2]
-        rest = args.full[len(args.tokens[0] + " " + args.tokens[1] + " " + args.tokens[2] + " "):]
-        marking = marking + "] "
-
-    if rest == "":
-        msg = args.full[len(args.tokens[0]) + 1:]
-    else:
-        msg = rest
-
-    msg = msg[0].upper() + msg[1:]
-    if msg[-1] not in ('.', '!', '?'):
-        msg = msg + '.'
-
-    marking = colorfy(marking, 'yellow')
-
-    for e in args.actor.instance.connections:
-        if e == args.actor:
-            e.sendMessage(marking + colorfy('You whisper, "' + msg + '"', "dark gray"))
-        else:
-            e.sendMessage(marking + colorfy(args.actor.name + ' whispers, "' + msg + '"', 'dark gray'))
-
     return True
 
 
@@ -1308,6 +1313,7 @@ def save(args):
     return True
 
 
+@block
 def description(args):
     """
     A player may create a description for his or her character.
@@ -1337,6 +1343,7 @@ def _description(args, text):
     args.actor.sendMessage("Profile saved.")
 
 
+@block
 def docshare(args):
     """
     This is a command for sharing large text documents with the group.
@@ -1386,10 +1393,3 @@ def _docshare(args, text):
         print "Server: Exception occurred while uploading to hastebin."
         args.actor.sendMessage("There was an issue with uploading your document to hastebin.")
         args.actor.sendMessage("Chances are that either hastebin is down, or your document was too large.")
-
-
-# Some commands take in subsequent text on multiple lines.
-# These commands need to be recognized so that they can "hold" an entity's
-# input loop before the next text comes in. These are marked here for now.
-# TODO: Is there a way to simply annotate these functions?
-INPUT_BLOCK = set([description, docshare])

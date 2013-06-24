@@ -3,7 +3,7 @@ from stage import Stage
 
 class Instance(object):
 
-    __slots__ = ("connections", "stage")
+    __slots__ = ("connections", "stage", "entity_map")
 
     def __init__(self, connections):
         self.connections = connections
