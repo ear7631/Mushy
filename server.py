@@ -1,12 +1,12 @@
 import sys
 import traceback
 import socket
-import commandparser
 import threading
+
 import entity
 import session
 import persist
-
+from commandparser import CommandParser
 from colorer import colorfy
 
 
@@ -182,7 +182,6 @@ class LoginProxy(threading.Thread):
 
 
 def main():
-
     listen_port = 8080
     if len(sys.argv) == 2:
         try:
@@ -197,8 +196,8 @@ def main():
     connections = []
     instance = session.Instance(connections)
 
-    print "Server: Starting command parser."
-    commandparser.startDispatching()
+    print "Server: Creating the CommandParser"
+    parser = CommandParser()
 
     print "Server: Initialization Complete."
     print "Server: Setting up network communications."
@@ -206,7 +205,8 @@ def main():
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind(('', listen_port))
     server_socket.listen(0)
-    print "Server: Listening on port " + str(listen_port) + ", press control+C to exit."
+    print "Server: OK."
+    print "Server: Listening on port " + str(listen_port) + ", press control+C to exit.\n"
 
     done = False
     while not done:
@@ -221,7 +221,7 @@ def main():
             print ""
             print "Server: Closing server socket and dispatcher..."
             server_socket.close()
-            commandparser.stopDispatching()
+            parser.kill()
             print "Server: Closing client connections..."
             for connection in instance.connections:
                 connection.proxy.kill()
