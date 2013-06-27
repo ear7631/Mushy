@@ -19,4 +19,5 @@ def colorfy(text, color):
     key = "normal"
     if color in colors:
         key = color
+    text = text.replace("[0m", "[" + colors[key] + "m")
     return "\033[" + colors[key] + "m" + text + "\033[0m"
