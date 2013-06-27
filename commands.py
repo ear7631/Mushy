@@ -246,6 +246,10 @@ def _speak(args, second_tense, third_tense, speak_color):
             else:
                 lang = None
 
+    if target_entity == args.actor:
+        args.actor.sendMessage("Stop speaking to yourself!")
+        return True
+
     # Properize the remaining text
     full = full[0].upper() + full[1:]
     if full[-1] not in ('.', '!', '?'):
@@ -253,17 +257,29 @@ def _speak(args, second_tense, third_tense, speak_color):
 
     # Say stuff to a target
     if target_entity is not None:
-        # in a language
-        if lang is not None:
-            args.actor.sendMessage(colorfy('You ' + second_tense + ' to ' + target_entity.name + ' in ' + lang + ', "' + full + '"', speak_color))
-            if lang in target_entity.languages:
-                target_entity.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' to you in ' + lang + ', "' + full + '"', speak_color))
+        for e in args.actor.session:
+            # in a language
+            if lang is not None:
+                if e == args.actor:
+                    args.actor.sendMessage(colorfy('You ' + second_tense + ' to ' + target_entity.name + ' in ' + lang + ', "' + full + '"', speak_color))
+                elif e == target_entity:
+                    if lang in target_entity.languages:
+                        target_entity.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' to you in ' + lang + ', "' + full + '"', speak_color))
+                    else:
+                        target_entity.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' something to you in ' + lang + '.', speak_color))
+                else:
+                    if lang in e.languages:
+                        e.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' to ' + target_entity.name + ' in ' + lang + ', "' + full + '"', speak_color))
+                    else:
+                        e.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' something to ' + target_entity.name + ' in ' + lang + '.', speak_color))
+            # common
             else:
-                target_entity.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' something to you in ' + lang + '.', speak_color))
-        # common
-        else:
-            args.actor.sendMessage(colorfy('You ' + second_tense + ' to ' + target_entity.name + ', "' + full + '"', speak_color))
-            target_entity.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' to you, "' + full + '"', speak_color))
+                if e == args.actor:
+                    args.actor.sendMessage(colorfy('You ' + second_tense + ' to ' + target_entity.name + ', "' + full + '"', speak_color))
+                elif e == target_entity:
+                    target_entity.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' to you, "' + full + '"', speak_color))
+                else:
+                    e.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' to ' + target_entity.name + ', "' + full + '"', speak_color))
     # Say stuff to everyone
     else:
         for e in args.actor.session:
