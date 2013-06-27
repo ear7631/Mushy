@@ -3,8 +3,7 @@ import sys
 import threading
 import time
 import socket
-
-from commandparser import CommandParser
+import commandparser
 
 
 class Entity(object):
@@ -56,7 +55,7 @@ class ClientProxy(threading.Thread):
         self.entity = None
         self.running = False
         self.bypass = False
-        self.parser = CommandParser()
+        self.parser = commandparser.CommandParser()
 
     def setEntity(self, entity):
         self.entity = entity
@@ -82,7 +81,6 @@ class ClientProxy(threading.Thread):
                         continue
                     else:
                         self.parser.parseLine(data, self.entity)
-                        #commandparser.parseLine(data, self.entity)
 
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
