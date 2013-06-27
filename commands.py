@@ -208,6 +208,7 @@ def _speak(args, second_tense, third_tense, speak_color):
 
     target_entity = None
     lang = None
+    color_lang = None
 
     # CASE 1: Match on SAY IN
     if rest_tokens[0] == 'in' and len(rest_tokens) >= 3:
@@ -255,23 +256,26 @@ def _speak(args, second_tense, third_tense, speak_color):
     if full[-1] not in ('.', '!', '?'):
         full = full + '.'
 
+    if lang is not None:
+        color_lang = colorfy(lang, "green")
+
     # Say stuff to a target
     if target_entity is not None:
         for e in args.actor.session:
             # in a language
             if lang is not None:
                 if e == args.actor:
-                    args.actor.sendMessage(colorfy('You ' + second_tense + ' to ' + target_entity.name + ' in ' + lang + ', "' + full + '"', speak_color))
+                    args.actor.sendMessage(colorfy('You ' + second_tense + ' to ' + target_entity.name + ' in ' + color_lang + ', "' + full + '"', speak_color))
                 elif e == target_entity:
                     if lang in target_entity.languages:
-                        target_entity.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' to you in ' + lang + ', "' + full + '"', speak_color))
+                        target_entity.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' to you in ' + color_lang + ', "' + full + '"', speak_color))
                     else:
-                        target_entity.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' something to you in ' + lang + '.', speak_color))
+                        target_entity.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' something to you in ' + color_lang + '.', speak_color))
                 else:
                     if lang in e.languages:
-                        e.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' to ' + target_entity.name + ' in ' + lang + ', "' + full + '"', speak_color))
+                        e.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' to ' + target_entity.name + ' in ' + color_lang + ', "' + full + '"', speak_color))
                     else:
-                        e.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' something to ' + target_entity.name + ' in ' + lang + '.', speak_color))
+                        e.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' something to ' + target_entity.name + ' in ' + color_lang + '.', speak_color))
             # common
             else:
                 if e == args.actor:
@@ -286,11 +290,11 @@ def _speak(args, second_tense, third_tense, speak_color):
             # in a language
             if lang is not None:
                 if e == args.actor:
-                    e.sendMessage(colorfy('You ' + second_tense + ' in ' + lang + ', "' + full + '"', speak_color))
+                    e.sendMessage(colorfy('You ' + second_tense + ' in ' + color_lang + ', "' + full + '"', speak_color))
                 elif lang in e.languages:
-                    e.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' in ' + lang + ', "' + full + '"', speak_color))
+                    e.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' in ' + color_lang + ', "' + full + '"', speak_color))
                 else:
-                    e.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' something in ' + lang + '.', speak_color))
+                    e.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' something in ' + color_lang + '.', speak_color))
             # common
             else:
                 if e == args.actor:
