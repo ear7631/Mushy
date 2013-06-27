@@ -78,8 +78,8 @@ def language(args):
     List of subcommands and syntax:
         list:           language list
         peek:           language peek <target>
-        learn:          language register <target> <language>
-        forget:         language unregister <target> <language>
+        learn:          language learn <target> <language>
+        forget:         language forget <target> <language>
     """
     if len(args.tokens) < 4:
         if len(args.tokens) == 1:
@@ -103,6 +103,8 @@ def language(args):
     subcommand = tokens[1]
     target = ''
     language = ''
+    div = ", "
+
     if len(tokens) > 2:
         target = tokens[2]
         target = target[0].upper() + target[1:]
@@ -111,20 +113,20 @@ def language(args):
         language = language.lower()
 
     if subcommand == 'list':
-        args.actor.sendMessage("You know the following languages: " + str(args.actor.languages))
+        args.actor.sendMessage("You know the following languages: " + div.join(args.actor.languages))
 
     elif subcommand == 'peek' and target in args.actor.session:
         e = args.actor.session.getEntity(target)
-        args.actor.sendMessage(target + " knows the following languages: " + str(e.languages))
+        args.actor.sendMessage(target + " knows the following languages: " + div.join(args.actor.languages))
 
-    elif subcommand == 'learn' and target in args.actor.session:
+    elif subcommand in ('learn', 'register') and target in args.actor.session:
         e = args.actor.session.getEntity(target)
         e.languages.append(language)
         args.actor.sendMessage(target + " now understands the language: " + colorfy(language, "green"))
         e.sendMessage("You have learned the language: " + colorfy(language, "green"))
         persist.saveEntity(e)
 
-    elif subcommand == 'forget' and target in args.actor.session:
+    elif subcommand in ('forget', 'unregister') and target in args.actor.session:
         if language in e.languages:
             e.languages.remove(language)
             args.actor.sendMessage(target + " has forgotten the language: " + colorfy(language, "green"))
