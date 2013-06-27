@@ -1,4 +1,9 @@
-import sys, inspect, threading, random, urllib2, json
+import sys
+import inspect
+import threading
+import random
+import urllib2
+import json
 
 import namedtuple
 import persist
@@ -117,6 +122,7 @@ def language(args):
         e.languages.append(language)
         args.actor.sendMessage(target + " now understands the language: " + colorfy(language, "green"))
         e.sendMessage("You have learned the language: " + colorfy(language, "green"))
+        persist.saveEntity(e)
 
     elif subcommand == 'forget' and target in args.actor.session:
         if language in e.languages:
@@ -379,9 +385,8 @@ def logout(args):
 
     syntax: logout
     """
-    for e in args.actor.session:
-        args.actor.sendMessage(colorfy("[SERVER] You have quit the session.", "bright yellow"))
-        args.actor.session.broadcastExclude(colorfy("[SERVER] " + args.actor.name + " has quit the session.", "bright yellow"), args.actor)
+    args.actor.sendMessage(colorfy("[SERVER] You have quit the session.", "bright yellow"))
+    args.actor.session.broadcastExclude(colorfy("[SERVER] " + args.actor.name + " has quit the session.", "bright yellow"), args.actor)
     persist.saveEntity(args.actor)
     try:
         args.actor.proxy.running = False
@@ -583,7 +588,9 @@ def mask(args):
         >> Nameless says, "Who... who am I?"
     """
     # Exceptional case where we need this for husk-command-trickery
-    import commandparser, entity
+    import commandparser
+    import entity
+
     if len(args.tokens) < 3:
         return False
 
@@ -591,8 +598,15 @@ def mask(args):
         args.actor.sendMessage("Whoa there... This is a DM power! Bad!")
         return True
 
-    husk = entity.Entity(name=args.tokens[1][0].upper() + args.tokens[1][1:], session=args.actor.session)
+    impossible_to_mask = ("docshare", "description", "desc")
+
     new_full = args.full[len(args.tokens[0] + " " + args.tokens[1] + " "):]
+    new_tokens = new_full.split(" ")
+    if new_tokens[0] in impossible_to_mask:
+        args.actor.sendMessage("That command cannot be masked.")
+        return True
+
+    husk = entity.Entity(name=args.tokens[1][0].upper() + args.tokens[1][1:], session=args.actor.session)
     commandparser.CommandParser().parseLine(new_full, husk)
     return True
 
@@ -707,7 +721,7 @@ def status(args):
     status = status[0].lower() + status[1:]
 
     args.actor.sendMessage(colorfy(">You are " + status, "dark gray"))
-    args.actor.session.boardcastExclude(colorfy(">" + args.actor.name + " is " + status, "dark gray"), args.actor)
+    args.actor.session.broadcastExclude(colorfy(">" + args.actor.name + " is " + status, "dark gray"), args.actor)
     return True
 
 
@@ -721,13 +735,13 @@ def glance(args):
     if len(args.tokens) < 2:
         return False
 
-    target = args.actor.session.getEntity(args.tokens[1])
-    if target is not None:
-        args.actor.sendMessage("You glance at " + e.name + ".")
-        if e.status == "":
+    if args.tokens[1] in args.actor.session:
+        target = args.actor.session.getEntity(args.tokens[1])
+        args.actor.sendMessage("You glance at " + target.name + ".")
+        if target.status == "":
             return True
-        status = e.status[0].lower() + e.status[1:]
-        args.actor.sendMessage("  " + e.name + " is " + colorfy(status, "dark gray"))
+        status = target.status[0].lower() + target.status[1:]
+        args.actor.sendMessage("  " + target.name + " is " + colorfy(status, "dark gray"))
     else:
         args.actor.sendMessage('There is no player "' + args.tokens[1] + '" here.')
     return True
@@ -744,14 +758,14 @@ def examine(args):
         return False
 
     if args.tokens[1] in args.actor.session:
-        target = args.actor.session.getEntity(tokens[1])
-        top = e.name + "'s Profile"
+        target = args.actor.session.getEntity(args.tokens[1])
+        top = target.name + "'s Profile"
         args.actor.sendMessage(top)
         args.actor.sendMessage("-"*len(top))
-        if e.facade is not None and e.facade != "":
-            args.actor.sendMessage(e.facade)
+        if target.facade is not None and target.facade != "":
+            args.actor.sendMessage(target.facade)
         else:
-            args.actor.sendMessage(e.name + "'s profile is empty.")
+            args.actor.sendMessage(target.name + "'s profile is empty.")
     return True
 
 
