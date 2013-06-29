@@ -34,7 +34,7 @@ class LoginProxy(threading.Thread):
         if username in self.session:
             clone = self.session.getEntity(username)
             clone.proxy.kill()
-            del self.session[username]
+            del self.session.connections[username.lower()]
 
     def run(self):
         try:
