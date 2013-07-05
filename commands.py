@@ -776,7 +776,7 @@ def examine(args):
     syntax: examine <player>
     """
 
-    if len(args.tokens) >= 3:
+    if len(args.tokens) != 2:
         return False
 
     if args.tokens[1] in args.actor.session:
