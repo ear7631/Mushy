@@ -26,6 +26,7 @@ class Editor(object):
         self.actor.sendMessage("You may enter in as many lines of text as you wish.")
         self.actor.sendMessage("Type ** on its own line to finish, ~help to see commands.")
         done = False
+        toss = False
 
         while not done:
             data = self.actor.proxy.socket.recv(4096)
@@ -54,6 +55,7 @@ class Editor(object):
                 self.actor.sendMessage(" ~help          - View this help text")
                 self.actor.sendMessage(" ~lines         - View this document with line numbers")
                 self.actor.sendMessage(" ~mark <line>   - Set the marker. Lines added will be inserted at this line.")
+                self.actor.sendMessage(" ~quit          - Leave the editor, and abandon the document.")
                 self.actor.sendMessage(" ~view          - View this document text")
             elif tokens[0] == "~lines" and len(tokens) == 1:
                 for i in range(len(self.lines)):
@@ -67,6 +69,9 @@ class Editor(object):
             elif tokens[0] == "~view" and len(tokens) == 1:
                 for line in self.lines:
                     self.actor.sendMessage(line.strip())
+            elif tokens[0] == "~quit" and len(tokens) == 1:
+                done = True
+                toss = True
             else:
                 data_lines = data.splitlines(True)
                 for line in data_lines:
@@ -78,10 +83,14 @@ class Editor(object):
 
         self.updateText()
         self.actor.sendMessage("Leaving the Mushy editor.")
-        if callback is None:
-            return self.text
 
         self.actor.proxy.bypass = False
+
+        if toss:
+            return
+        elif callback is None:
+            return self.text
+
         return callback(callback_args, self.text)
         
         
