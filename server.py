@@ -82,7 +82,7 @@ class LoginProxy(threading.Thread):
                 if username in self.session:
                     choice = ''
                     while not choice in ('y', 'n'):
-                        self.socket.send("Another instance of you is already connected. Kick it and take its place? (y/n) ")
+                        self.socket.send("Another instance of you is already connected. Kick it and take its place? (y/n)\n")
                         choice = self.socket.recv(4096).strip()
                         self.socket.send("\n")
 
@@ -124,7 +124,7 @@ class LoginProxy(threading.Thread):
                 salt, hcode = persist.hashPassword(password)
                 player = entity.Entity(name=username, hcode=hcode, salt=salt)
 
-                self.socket.send("Are you the DM for the group (y if yes)? ")
+                self.socket.send("Are you the DM for the group (y if yes)?\n")
                 choice = self.socket.recv(4096).strip()
                 self.socket.send("\n")
                 dm = False
