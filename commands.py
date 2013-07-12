@@ -8,6 +8,7 @@ import json
 import namedtuple
 import persist
 import editor
+import dice
 
 from colorer import colors as swatch
 from colorer import colorfy
@@ -495,26 +496,24 @@ def roll(args):
     """
     Roll a dice of a specified number of sides. The dice roll is public.
 
-    syntax: roll <number>d<sides> [reason]
+    syntax: roll <sequence> [reason]
 
     example:
         roll 1d20
-        >>[DICE] DM_Eitan rolls 1d20.
-        >>  18
+        roll 2d6 + 2 "to hit"
 
-        roll 2d6 damage
-        >>[DICE (damage)] Justin rolls 2d6.
-        >>  3
-        >>  5
-
+    
+    There are some limitations on dice.
+        You cannot roll over 20 dice at once (ex: 99d20)
+        You cannot roll a die with over 100 sides (ex: 1d200)
+        You cannot roll less tha one die, or a die with less than two sides
+        The number of dice, and the number of sides, must be numerical
 
     Alternatively, as a shorthand, you may roll a single die of N sides
     with no specified purpose with the "#" token (no space).
 
     example:
-        #20
-        >>[DICE] DM_Eitan rolls 1d20.
-        >>  18
+    #20        This is the same as        roll 1d20
 
 
     Rolls can also be kept hidden from others. To do this, use the
@@ -526,57 +525,36 @@ def roll(args):
     if len(args.tokens) < 2:
         return False
 
-    # simple case
-    num = 0
-    sides = 0
-    purpose = ""
+    reason_index = args.full.find('"')
+    reason = ""
+    if reason_index == -1:
+        reason_index = len(args.full)
+    else:
+        reason = args.full[reason_index+1:-1]
 
-    dice = args.tokens[1].split('d')
-    if len(dice) != 2:
-        return False
-
-    try:
-        num = int(dice[0])
-        sides = int(dice[1])
-        if sides > 100:
-            args.actor.sendMessage("Okay, you show me a physical die with that many sides, and I'll let you roll it.")
-            return True
-        elif sides < 2:
-            args.actor.sendMessage("A die has more sides than THAT!")
-            return True
-        elif num < 1:
-            args.actor.sendMessage("Are you rolling, or what, sir?")
-            return True
-        elif num > 20:
-            args.actor.sendMessage("You can't even fit than many dice in your hand!")
-            return True
-    except:
-        return False
+    dice_str = args.full[len(args.tokens[0])+1:reason_index]
 
     visible = True
     if args.tokens[0] == 'hroll':
         visible = False
 
-    purpose = args.full[len(args.tokens[0] + " " + args.tokens[1] + " "):]
-
-    marking = "[DICE"
-    if purpose != "":
-        marking = marking + " (" + purpose
-        if not visible:
-            marking = marking + ", hidden"
-        marking = marking + ")"
-    elif not visible:
-        marking = marking + " (hidden)"
-    marking = marking + "] "
-    marking = colorfy(marking, 'bright yellow')
-
-    dice = []
-    for i in range(num):
-        dice.append(random.randint(1, sides))
-
-    msg = marking + args.actor.name + " rolls " + str(num) + "d" + str(sides) + "."
-    for die in dice:
-        msg += "\n  " + str(die)
+    result = ""
+    msg = ""
+    try:
+        result, msg = dice.parse(dice_str)
+    except dice.DiceException as e:
+        e_msg = 'Bad roll formatting! The clause ' + colorfy(str(e), "bred") + " is no good!"
+        e_msg += '\nFor more help, try ' + colorfy("help roll", "green") + '.'
+        args.actor.sendMessage(e_msg)
+        return True
+    pre = args.actor.name + " "
+    if not visible:
+        pre += colorfy("secretly ", "bred")
+    pre += "rolls " + colorfy(dice_str, "yellow")
+    if reason != "":
+        pre += "for " + colorfy(reason, "bred")
+    pre += ".\n    "
+    msg = pre + msg + "    (total = " + colorfy(str(result), "yellow") + ")"
 
     if visible:
         args.actor.session.broadcast(msg)
