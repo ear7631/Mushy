@@ -174,7 +174,7 @@ class LoginProxy(threading.Thread):
 
 def main():
     listen_port = 8080
-    if len(sys.argv) > 2:
+    if len(sys.argv) >= 2:
         try:
             listen_port = int(sys.argv[1])
         except:

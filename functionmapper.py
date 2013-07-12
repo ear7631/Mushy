@@ -4,6 +4,9 @@ import namedtuple
 CommandArgs = namedtuple.namedtuple('CommandArgs', 'name tokens full actor')
 
 commandFunctions = {}
+commandFunctions["alias"] = commands.alias
+commandFunctions["unalias"] = commands.alias
+commandFunctions["aliases"] = commands.alias
 commandFunctions["say"] = commands.say
 commandFunctions["whisper"] = commands.whisper
 commandFunctions["yell"] = commands.yell

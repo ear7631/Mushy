@@ -68,6 +68,8 @@ def saveEntity(e):
     data["dm"] = e.dm
 
     data["languages"] = e.languages
+    data["aliases"] = e.aliases
+
     f.write(json.dumps(data))
     f.close()
 
@@ -91,5 +93,6 @@ def loadEntity(username):
     e.dm = data["dm"]
     e.facade = data["facade"]
     e.languages = data["languages"]
+    e.aliases = data["aliases"]
 
     return e

@@ -9,7 +9,7 @@ import commandparser
 class Entity(object):
     __slots__ = ("proxy", "name", "session", "dm", "status", "tallies",
                  "bags", "facade", "tallies_persist", "bags_persist",
-                 "languages", "hcode", "salt")
+                 "languages", "aliases", "hcode", "salt")
 
     def __init__(self, name="", hcode=None, salt=None, proxy=None, session=None):
         self.proxy = proxy
@@ -31,6 +31,7 @@ class Entity(object):
         self.salt = salt
 
         self.languages = []
+        self.aliases = {}
 
     def sendMessage(self, message):
         if(self.proxy is not None):

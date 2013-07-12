@@ -65,6 +65,53 @@ def zap(args):
     return True
 
 
+def alias(args):
+    """
+    Players may wish to create their own shortcuts, called "aliases"
+    to allow easier playing. This is particularly useful if one repeats
+    a non-trivial command often, such as a complex emote or roll. Up to
+    20 aliases may be stored at once.
+
+    syntax: alias <shortcut> <command>
+            unalias <shortcut>
+
+    Users may check their list of aliases with the "aliases" command.
+    """
+    if args.tokens[0] == "unalias":
+        if len(args.tokens) < 2:
+            return False
+        key = args.tokens[1]
+        if key in args.actor.aliases:
+            del args.actor.aliases[key]
+            args.actor.sendMessage('Alias "' + key + '" removed.')
+            persist.saveEntity(args.actor)
+        else:
+            args.actor.sendMessage('Alias "' + key + '" does not exist.')
+
+    elif args.tokens[0] == "aliases" or (args.tokens[0] == "alias" and len(args.tokens) == 1):
+        if len(args.actor.aliases) == 0:
+            args.actor.sendMessage("You have no saved aliases.")
+            return True
+        msg = "List of registered aliases:\n"
+        for key in args.actor.aliases:
+            msg += key + ":  " + args.actor.aliases[key] + "\n"
+        args.actor.sendMessage(msg)
+
+    else:
+        if len(args.tokens) < 3:
+            return False
+        elif len(args.actor.aliases) >= 20:
+            args.actor.sendMessage("You may only have up to 20 aliases saved at once.")
+            return True
+        key = args.tokens[1]
+        alias_cmd = args.full[len(args.tokens[0] + args.tokens[1]) + 2:]
+        args.actor.aliases[key] = alias_cmd
+        args.actor.sendMessage('Alias "' + key + '" added.')
+        persist.saveEntity(args.actor)
+
+    return True
+
+
 def language(args):
     """
     Players may speak in a variety of different languages, so long as

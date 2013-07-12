@@ -74,11 +74,13 @@ class Dispatcher(threading.Thread):
             self.lock.wait()
             if not self.dispatching:
                 break
+            
             # get the next command in the queue and execute it
             args = self.queue.pop()
             args = functionmapper.shorthandHandler(args)
             command = args.name
 
+            # handle the command if it exists
             if command in functionmapper.commandFunctions:
                 try:
                     ret = functionmapper.commandFunctions[command](args)  # this calls the function
@@ -88,6 +90,13 @@ class Dispatcher(threading.Thread):
                     print "Server: An error has occured."
                     print "-----------------------------"
                     print traceback.format_exc()
+            # check to see if it's an alias
+            elif command in args.actor.aliases:
+                new_line = args.actor.aliases[command].strip()
+                new_tokens = new_line.split(" ")
+                new_args = CommandArgs(name=new_tokens[0], tokens=new_tokens, full=new_line, actor=args.actor)
+                self.queue.append(new_args)
+                self.lock.set()
             else:
                 args.actor.sendMessage("What?")
 
