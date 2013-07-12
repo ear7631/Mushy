@@ -10,14 +10,17 @@ import commandparser
 
 from colorer import colorfy
 
+DEBUG = False
+
 
 class LoginProxy(threading.Thread):
 
-    def __init__(self, socket, session):
+    def __init__(self, socket, session, proxy_pool):
         threading.Thread.__init__(self)
         self.socket = socket
         self.running = False
         self.session = session
+        self.proxy_pool = proxy_pool
 
     def setEntity(self, entity):
         self.entity = entity
@@ -27,6 +30,8 @@ class LoginProxy(threading.Thread):
             self.socket.shutdown(socket.SHUT_RDWR)
             self.socket.close()
             self.running = False
+            if self in self.proxy_pool:
+                self.proxy_pool.remove(self)
         except:
             pass
 
@@ -156,16 +161,20 @@ class LoginProxy(threading.Thread):
                 player.sendMessage(colorfy("[SERVER] You have joined the session.", "bright yellow"))
                 player.sendMessage(colorfy("[SERVER] You may type 'help' at any time for a list of commands.", 'bright green'))
         except:
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            traceback.print_exception(exc_type, exc_value, exc_traceback, limit=None, file=sys.stdout)
-            self.running = False
-            self.socket.close()
-            print "Server: Client connection closed. Exception during login."
+            if DEBUG:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                traceback.print_exception(exc_type, exc_value, exc_traceback, limit=None, file=sys.stdout)
+                self.running = False
+                self.socket.close()
+                print "Server: Client connection closed. Exception during login."
+        finally:
+            if self in self.proxy_pool:
+                self.proxy_pool.remove(self)
 
 
 def main():
     listen_port = 8080
-    if len(sys.argv) == 2:
+    if len(sys.argv) > 2:
         try:
             listen_port = int(sys.argv[1])
         except:
@@ -190,13 +199,15 @@ def main():
     print "Server: Listening on port " + str(listen_port) + ", press control+C to exit.\n"
 
     done = False
+    proxy_pool = []
     while not done:
         try:
             # client connects to the server
             client_socket, address = server_socket.accept()
             print "Server: Accepting connection from " + address[0] + "..."
             # spawn up a client proxy here
-            proxy = LoginProxy(client_socket, running_session)
+            proxy = LoginProxy(client_socket, running_session, proxy_pool)
+            proxy_pool.append(proxy)
             proxy.start()
         except KeyboardInterrupt:
             print ""
@@ -206,6 +217,8 @@ def main():
             print "Server: Closing client connections..."
             for connection in running_session:
                 connection.proxy.kill()
+            for proxy in proxy_pool:
+                proxy.kill()
             done = True
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -214,4 +227,6 @@ def main():
 
 
 if __name__ == '__main__':
+    if "--DEBUG" in sys.argv:
+        DEBUG = True
     main()
