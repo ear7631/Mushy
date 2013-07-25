@@ -22,6 +22,7 @@ commandFunctions["emote"] = commands.emote
 commandFunctions["ooc"] = commands.ooc
 commandFunctions["roll"] = commands.roll
 commandFunctions["hroll"] = commands.roll
+commandFunctions["droll"] = commands.roll
 commandFunctions["display"] = commands.display
 commandFunctions["mask"] = commands.mask
 commandFunctions["status"] = commands.status
@@ -53,7 +54,7 @@ def shorthandHandler(args):
     if len(args.full) < 2:
         return args
 
-    if args.name[0] == '*' or args.name[0] == ';':
+    if args.name[0] in ('*', ';'):
         new_name = "emote"
         new_tokens = ["emote", ";", args.tokens[0][1:]] + args.tokens[1:]
         new_full = "emote ; " + args.full[1:]

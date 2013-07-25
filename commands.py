@@ -557,19 +557,29 @@ def roll(args):
         The number of dice, and the number of sides, must be numerical
 
     Alternatively, as a shorthand, you may roll a single die of N sides
-    with no specified purpose with the "#" token (no space).
+    with no specified purpose with the "#" token (no space). Standard 1d20
+    rolls can be invoked by simply using the "roll" command with no arguments.
 
     example:
-    #20        This is the same as        roll 1d20
+    #6      is the same as    roll 1d6
+    roll    is the same as    roll 1d20
 
 
     Rolls can also be kept hidden from others. To do this, use the
-    command "hroll" instead of "roll".
+    command "hroll" instead of "roll". DMs can make a special hidden
+    roll that other players can't see, but still know happened, by using
+    the "droll" command.
 
     example:
         hroll 1d20
     """
-    if len(args.tokens) < 2:
+
+    if len(args.tokens) == 1:
+        new_tokens = [args.name, "1d20"]
+        new_full = args.name + " 1d20"
+        newargs = CommandArgs(name=args.name, tokens=new_tokens, full=new_full, actor=args.actor)
+        args = newargs
+    elif len(args.tokens) < 2:
         return False
 
     reason_index = args.full.find('"')
@@ -582,8 +592,11 @@ def roll(args):
     dice_str = args.full[len(args.tokens[0])+1:reason_index]
 
     visible = True
-    if args.tokens[0] == 'hroll':
+    if args.tokens[0] in ('hroll', 'droll'):
         visible = False
+
+    if args.tokens[0] == 'droll' and not args.actor.dm:
+        return False
 
     result = ""
     msg = ""
@@ -607,6 +620,8 @@ def roll(args):
         args.actor.session.broadcast(msg)
     else:
         args.actor.sendMessage(msg)
+        if args.tokens[0] == 'droll':
+            args.actor.session.broadcastExclude(colorfy("The DM makes a hidden roll.", "bred"), args.actor)
 
     return True
 
