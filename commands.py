@@ -1,7 +1,5 @@
 import sys
 import inspect
-import threading
-import random
 import urllib2
 import json
 
