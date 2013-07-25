@@ -246,9 +246,6 @@ def _speak(args, second_tense, third_tense, speak_color):
         return False
 
     full = args.full
-    marking = ""
-    rest = ""
-    msg = ""
 
     # Get rid of the "say" command token
     rest_tokens = args.tokens[1:]
@@ -928,8 +925,8 @@ def sculpt(args):
         return False
 
     if args.tokens[1] == 'remove':
-        tag = args[2]
-        if rag in args.actor.session.stage.objects:
+        tag = args.tokens[2]
+        if tag in args.actor.session.stage.objects:
             args.actor.session.stage.eraseObject(tag)
         else:
             args.actor.sendMessage("There is no " + tag + " in the scene.")
@@ -1432,7 +1429,7 @@ def _docshare(args, text):
             args.actor.sendMessage(colorfy("You share a document with: " + str(sent), "red"))
         else:
             args.actor.session.broadcast(colorfy("DM " + args.actor.name + " shares a document with the session: " + link, "red"))
-    except HTTPError:
+    except urllib2.HTTPError:
         print "Server: Exception occurred while uploading to hastebin."
         args.actor.sendMessage("There was an issue with uploading your document to hastebin.")
         args.actor.sendMessage("Chances are that either hastebin is down, or your document was too large.")
