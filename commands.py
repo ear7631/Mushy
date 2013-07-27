@@ -173,6 +173,7 @@ def language(args):
         persist.saveEntity(e)
 
     elif subcommand in ('forget', 'unregister') and target in args.actor.session:
+        e = args.actor.session.getEntity(target)
         if language in e.languages:
             e.languages.remove(language)
             args.actor.sendMessage(target + " has forgotten the language: " + colorfy(language, "green"))
