@@ -1,14 +1,16 @@
 import stage
 import entity
+import turnqueue
 
 
 class Session(object):
 
-    __slots__ = ("connections", "stage", "entity_map")
+    __slots__ = ("connections", "stage", "entity_map", "turn_queue")
 
     def __init__(self):
         self.connections = {}
         self.stage = stage.Stage()
+        self.turn_queue = turnqueue.TurnQueue()
 
     def add(self, player):
         self.connections[player.name.lower()] = player

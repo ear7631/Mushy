@@ -1343,6 +1343,92 @@ def bag(args):
     return True
 
 
+def initiative(args):
+    """
+    A DM can keep track of turn orderings by using the initiative command.
+    The DM first sets the ordering by having everyone use the "init roll"
+    subcommand, which will add them to the initiative tracker. A DM may also
+    modify the ordering by hand, using the subcommands below.
+
+    Once satisifed, the DM must "commit" the ordering to be tracked. A DM can
+    always reset the ordering to the last commit by using "reset", or wipe
+    the ordering and commit by using "wipe".
+
+    All commands are for DM only with the exception of the roll command.
+
+    syntax: init <subcommand>
+
+    List of subcommands and syntax:
+        Roll:           init roll <sequence>
+        Add:            init add <name> <value>
+        Remove:         init remove <name>
+        Promote/Demote: init promote/demote <name>
+        Check:          init check
+        Commit:         init commit
+        List:           init display
+        Reset:          init reset
+        Wipe:           init wipe
+
+    There are a few shorthand commands for your convenience. You may bump up
+    or down the ordering of a player prior to commiting.
+        init <name> ++
+        init <name> --
+
+    You may also check the ordering by simply using the command with no argument.
+    """
+    tokens = args.tokens
+    if len(args.tokens) == 1:
+        tokens = ['init', 'check']
+    elif len(args.tokens) == 2 and args.tokens[1] not in ('check', 'commit', 'display', 'reset', 'wipe'):
+        return False
+    elif len(args.tokens) >= 3:
+        if args.tokens[2] == "++":
+            tokens = ['init', 'promote', args.tokens[1]]
+        elif args.tokens[2] == "--":
+            tokens = ['init', 'demote', args.tokens[1]]
+        elif args.tokens[1] not in ('roll', 'remove', 'promote', 'demote'):
+            return False
+
+        if not args.actor.dm and args.tokens[1] != 'roll':
+            return False
+
+    subcommand = tokens[1]
+    if subcommand == 'roll':
+        pass
+
+    elif subcommand == 'add':
+        pass
+
+    elif subcommand == 'remove':
+        pass
+
+    elif subcommand == 'promote':
+        pass
+
+    elif subcommand == 'demote':
+        pass
+
+    elif subcommand == 'check':
+        pass
+
+    elif subcommand == 'commit':
+        pass
+
+    elif subcommand == 'display':
+        pass
+
+    elif subcommand == 'reset':
+        pass
+
+    elif subcommand == 'wipe':
+        pass
+
+    else:
+        return False
+
+    return True
+
+
 def save(args):
     """
     Saves all persistent stuff.
