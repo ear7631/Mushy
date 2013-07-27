@@ -1352,7 +1352,8 @@ def initiative(args):
 
     Once satisifed, the DM must "commit" the ordering to be tracked. A DM can
     always reset the ordering to the last commit by using "reset", or wipe
-    the ordering and commit by using "wipe".
+    the ordering and commit by using "wipe". After each turn, the DM should
+    use the "tick" command.
 
     All commands are for DM only with the exception of the roll command.
 
@@ -1360,6 +1361,7 @@ def initiative(args):
 
     List of subcommands and syntax:
         Roll:           init roll <sequence>
+        Tick:           init tick
         Add:            init add <name> <value>
         Remove:         init remove <name>
         Promote/Demote: init promote/demote <name>
@@ -1375,11 +1377,16 @@ def initiative(args):
         init <name> --
 
     You may also check the ordering by simply using the command with no argument.
+
+    A DM may use the command "tick" as a shorthand for "init tick".
     """
     tokens = args.tokens
     if len(args.tokens) == 1:
-        tokens = ['init', 'check']
-    elif len(args.tokens) == 2 and args.tokens[1] not in ('check', 'commit', 'display', 'reset', 'wipe'):
+        if args.name == "tick":
+            tokens = ['init', 'tick']
+        else:
+            tokens = ['init', 'check']
+    elif len(args.tokens) == 2 and args.tokens[1] not in ('check', 'commit', 'display', 'reset', 'wipe', 'tick', 'roll'):
         return False
     elif len(args.tokens) >= 3:
         if args.tokens[2] == "++":
@@ -1389,39 +1396,101 @@ def initiative(args):
         elif args.tokens[1] not in ('roll', 'remove', 'promote', 'demote'):
             return False
 
-        if not args.actor.dm and args.tokens[1] != 'roll':
-            return False
+    if not args.actor.dm and args.tokens[1] != 'roll':
+        return False
 
     subcommand = tokens[1]
+    tracker = args.actor.session.tracker
     if subcommand == 'roll':
-        pass
+        dice_str = "1d20"
+        if len(tokens) > 3:
+            dice_str = " ".join(tokens[2:])
+
+        result = ""
+        msg = ""
+        try:
+            result, msg = dice.parse(dice_str)
+        except dice.DiceException as e:
+            e_msg = 'Bad roll formatting! The clause ' + colorfy(str(e), "bred") + " is no good!"
+            e_msg += '\nFor more help on roll syntax, check ' + colorfy("help roll", "green") + '.'
+            args.actor.sendMessage(e_msg)
+            return True
+        pre = args.actor.name + " rolls for initative: " + colorfy(dice_str, "yellow")
+        pre += ".\n    "
+        msg = pre + msg + "    (total = " + colorfy(str(result), "yellow") + ")"
+        tracker.add(args.actor.name, result)
+        args.actor.session.broadcast(msg)
 
     elif subcommand == 'add':
-        pass
+        if len(tokens != 4):
+            return False
+        num = 1
+        try:
+            num = int(tokens[3])
+        except ValueError:
+            args.actor.sendMessage("The value must be a number.")
+            return True
+        tracker.add(tokens[2], num)
+        args.actor.sendMessage("Added " + tokens[2].lower() + " to the tracker.")
 
     elif subcommand == 'remove':
-        pass
+        try:
+            tracker.remove(tokens[2])
+        except AttributeError:
+            args.actor.sendMessage(tokens[2] + " is not being tracked.")
+            return True
+        args.actor.sendMessage("Removed " + tokens[2] + " from the tracker.")
 
     elif subcommand == 'promote':
-        pass
+        try:
+            tracker.promote(tokens[2])
+        except AttributeError:
+            args.actor.sendMessage(tokens[2] + " is not being tracked.")
+            return True
+        args.actor.sendMessage("Promoted " + tokens[2] + ".")
 
     elif subcommand == 'demote':
-        pass
+        try:
+            tracker.demote(tokens[2])
+        except AttributeError:
+            args.actor.sendMessage(tokens[2] + " is not being tracked.")
+            return True
+        args.actor.sendMessage("Demoted " + tokens[2] + ".")
 
     elif subcommand == 'check':
-        pass
+        queue = tracker.queue
+        ordering = tracker.order
+        s = "Queue: " + ", ".join(x[0] for x in queue) + "\n"
+        s += "Ordering: " +  ", ".join(ordering)
+        args.actor.sendMessage(str(s));
 
     elif subcommand == 'commit':
-        pass
+        tracker.commit()
+        args.actor.session.broadcast(colorfy("The DM has set the turn order.", "bred"))
+        args.actor.session.broadcast(str(tracker))
+        args.actor.session.broadcast(colorfy("It is now " + tracker.peek() + "'s turn.", "bred"))
 
     elif subcommand == 'display':
-        pass
+        if len(tracker.order) == 0:
+            args.actor.sendMessage("No ordering has been committed.")
+            return True
+        args.actor.session.broadcast(str(tracker))
+        args.actor.session.broadcast(colorfy("It is now " + tracker.peek() + "'s turn.", "bred"))
 
     elif subcommand == 'reset':
-        pass
+        tracker.reset()
+        args.actor.session.broadcast("Tracker order reset. Recommit when ready.")
+
+    elif subcommand == 'tick':
+        if (tracker.tick()):
+            args.actor.session.broadcast(str(tracker))
+            args.actor.session.broadcast(colorfy("It is now " + tracker.peek() + "'s turn.", "bred"))
+        else:
+            args.actor.sendMessage("The tracker is not committed.")
 
     elif subcommand == 'wipe':
-        pass
+        tracker.wipe()
+        args.actor.session.broadcast("Tracker wiped.")
 
     else:
         return False

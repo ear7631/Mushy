@@ -5,12 +5,12 @@ import turnqueue
 
 class Session(object):
 
-    __slots__ = ("connections", "stage", "entity_map", "turn_queue")
+    __slots__ = ("connections", "stage", "entity_map", "tracker")
 
     def __init__(self):
         self.connections = {}
         self.stage = stage.Stage()
-        self.turn_queue = turnqueue.TurnQueue()
+        self.tracker = turnqueue.TurnQueue()
 
     def add(self, player):
         self.connections[player.name.lower()] = player
