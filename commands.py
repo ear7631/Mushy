@@ -26,6 +26,16 @@ actor - being object who used the command
 
 # These functions need to be identified for the bypass flag
 INPUT_BLOCK = set()
+MASKABLE = set()
+
+
+def maskable(func):
+    """
+    Decorate functions that cannot be masked.
+    """
+    if func not in MASKABLE:
+        MASKABLE.add(func)
+    return func
 
 
 def block(func):
@@ -351,6 +361,7 @@ def _speak(args, second_tense, third_tense, speak_color):
     return True
 
 
+@maskable
 def say(args):
     """
     Say something out loud, in character. Unless otherwise specified, things
@@ -387,6 +398,7 @@ def say(args):
     return _speak(args, 'say', 'says', 'white')
 
 
+@maskable
 def whisper(args):
     """
     Works just like "say", just with whisper flavor. For more info,
@@ -397,6 +409,7 @@ def whisper(args):
     return _speak(args, 'whisper', 'whispers', 'dgray')
 
 
+@maskable
 def yell(args):
     """
     Works just like "say", just with yell flavor. For more info,
@@ -463,6 +476,7 @@ def logout(args):
     return True
 
 
+@maskable
 def emote(args):
     """
     Perform an emote. Use the ";" or "*" token as a placeholder for your name.
@@ -644,23 +658,39 @@ def mask(args):
     example:
         $Nameless say Who... who am I?
         >> Nameless says, "Who... who am I?"
+
+    Unfortunately, this can get annoying. You can set masks indefinitely by using
+    the command "mask <name>". This will mask ALL commands until the DM uses the 
+    command "mask clear".
     """
     # Exceptional case where we need this for husk-command-trickery
     import commandparser
+    import functionmapper
     import entity
+    
+    if len(args.tokens) == 1 and args.tokens[0] == "unmask":
+        newargs = CommandArgs("mask", ["mask", "clear"], "mask clear", args.actor)
+        args = newargs
 
-    if len(args.tokens) < 3:
-        return False
+    if len(args.tokens) == 2:
+        if args.tokens[1] in ("clear", "reset", "remove"):
+            args.actor.mask = None
+            args.actor.sendMessage("You take off your mask.")
+        else:
+            huskname = args.tokens[1][0].upper() + args.tokens[1][1:]
+            husk = entity.Entity(name=huskname, session=args.actor.session)
+            args.actor.mask = husk
+            args.actor.sendMessage("You put on a " + colorfy(huskname, "green") + " mask.")
+        return True
 
     if not args.actor.dm:
         args.actor.sendMessage("Whoa there... This is a DM power! Bad!")
         return True
 
-    impossible_to_mask = ("docshare", "description", "desc")
-
     new_full = args.full[len(args.tokens[0] + " " + args.tokens[1] + " "):]
     new_tokens = new_full.split(" ")
-    if new_tokens[0] in impossible_to_mask:
+
+    if functionmapper.commandFunctions[new_tokens[0]] not in MASKABLE:
         args.actor.sendMessage("That command cannot be masked.")
         return True
 
@@ -1344,6 +1374,7 @@ def bag(args):
     return True
 
 
+@maskable
 def initiative(args):
     """
     A DM can keep track of turn orderings by using the initiative command.

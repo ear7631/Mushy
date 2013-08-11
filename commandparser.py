@@ -1,5 +1,4 @@
 import threading
-import time
 import traceback
 import namedtuple
 import commands
@@ -34,8 +33,16 @@ class CommandParser(object):
         tokens = line.split(" ")
         args = CommandArgs(name=tokens[0], tokens=tokens, full=line, actor=entity)
 
+        # This is for persistant masking
+        if (args.actor.mask is not None and 
+            args.name in functionmapper.commandFunctions and 
+            functionmapper.commandFunctions[args.name] in commands.MASKABLE):
+            newargs = CommandArgs(name=tokens[0], tokens=tokens, full=line, actor=args.actor.mask)
+            args = newargs
+
         # This is for input blocking
-        if args.name in functionmapper.commandFunctions and functionmapper.commandFunctions[args.name] in commands.INPUT_BLOCK:
+        if (args.name in functionmapper.commandFunctions and 
+            functionmapper.commandFunctions[args.name] in commands.INPUT_BLOCK):
             entity.proxy.bypass = True
 
         self.dispatcher.enqueueCommand(args)

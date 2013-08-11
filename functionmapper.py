@@ -25,6 +25,7 @@ commandFunctions["hroll"] = commands.roll
 commandFunctions["droll"] = commands.roll
 commandFunctions["display"] = commands.display
 commandFunctions["mask"] = commands.mask
+commandFunctions["unmask"] = commands.mask
 commandFunctions["status"] = commands.status
 commandFunctions["glance"] = commands.glance
 commandFunctions["colors"] = commands.colors

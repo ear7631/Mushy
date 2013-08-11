@@ -9,7 +9,7 @@ import commandparser
 class Entity(object):
     __slots__ = ("proxy", "name", "session", "dm", "status", "tallies",
                  "bags", "facade", "tallies_persist", "bags_persist",
-                 "languages", "aliases", "hcode", "salt")
+                 "languages", "aliases", "hcode", "salt", "mask")
 
     def __init__(self, name="", hcode=None, salt=None, proxy=None, session=None):
         self.proxy = proxy
@@ -18,6 +18,7 @@ class Entity(object):
         self.name = name
         self.session = session
         self.dm = False
+        self.mask = None
         self.status = ""
 
         self.tallies = {}
