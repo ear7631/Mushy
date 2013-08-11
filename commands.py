@@ -395,6 +395,10 @@ def say(args):
         'Hello, everyone!
         >>Eitan says, "Hello, everyone!"
     """
+    if args.full[-1] == '?':
+        return _speak(args, 'ask', 'asks', 'white')
+    elif args.full[-1] == '!':
+        return _speak(args, 'exclaim', 'exclaims', 'white')
     return _speak(args, 'say', 'says', 'white')
 
 
