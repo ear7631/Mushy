@@ -754,6 +754,14 @@ def display(args):
                 return False
             target = args.actor.session.getEntity(target_name)
             rest = rest[len(args.tokens[3] + " " + args.tokens[4] + " "):]
+    elif args.tokens[1] == '-t':
+        if len(args.tokens) < 4:
+            return False
+        target_name = args.tokens[2]
+        if target_name not in args.actor.session:
+            return False
+        target = args.actor.session.getEntity(target_name)
+        rest = args.full[len(args.tokens[0] + " " + args.tokens[1] + " " + args.tokens[2] + " "):]
     else:
         rest = args.full[len(args.tokens[0] + " "):]
 
