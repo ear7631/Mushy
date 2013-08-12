@@ -1,4 +1,4 @@
-import colorer
+from mushyutils import colorfy
 
 
 class TurnQueue(object):
@@ -93,11 +93,11 @@ class TurnQueue(object):
         return -1
 
     def __str__(self):
-        s = colorer.colorfy("    Turn Order    \n", "green")
+        s = colorfy("    Turn Order    \n", "green")
         s += "------------------\n"
         for entry in self.queue:
             s += entry[0] 
             if entry[0] == self.peek():
-                s += colorer.colorfy("  <--- Current Turn", "bred")
+                s += colorfy("  <--- Current Turn", "bred")
             s += "\n"
         return s

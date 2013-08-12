@@ -1,4 +1,7 @@
-colors = {
+import textwrap, re
+
+
+swatch = {
     'black': '0;30', 'bright gray': '0;37',
     'blue': '0;34', 'white': '1;37',
     'green': '0;32', 'bright blue': '1;34',
@@ -17,7 +20,21 @@ colors = {
 def colorfy(text, color):
     color = color.lower()
     key = "normal"
-    if color in colors:
+    if color in swatch:
         key = color
-    text = text.replace("[0m", "[" + colors[key] + "m")
-    return "\033[" + colors[key] + "m" + text + "\033[0m"
+    text = text.replace("[0m", "[" + swatch[key] + "m")
+    return "\033[" + swatch[key] + "m" + text + "\033[0m"
+
+
+def wrap(text, cols=79):
+    t = textwrap.TextWrapper()
+    t.break_long_words = True
+    t.subsequent_index = ""
+    t.width = cols
+    lines = re.split("(\n)", text)
+    wrapped_lines = []
+    for line in lines:
+        toadd = t.wrap(line)
+        wrapped_lines += toadd
+    s = "\n".join(wrapped_lines)
+    return s

@@ -8,8 +8,8 @@ import persist
 import editor
 import dice
 
-from colorer import colors as swatch
-from colorer import colorfy
+from mushyutils import swatch, colorfy
+
 
 CommandArgs = namedtuple.namedtuple('CommandArgs', 'name tokens full actor')
 

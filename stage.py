@@ -1,4 +1,4 @@
-from colorer import colors as swatch
+from mushyutils import swatch
 
 
 class Stage(object):

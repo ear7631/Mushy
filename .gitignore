@@ -1,3 +1,4 @@
 *.pyc
 profiles
 .DS_Store
+banner.txt

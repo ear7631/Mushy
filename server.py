@@ -8,7 +8,7 @@ import persist
 import session
 import commandparser
 
-from colorer import colorfy
+from mushyutils import colorfy, wrap
 
 DEBUG = False
 
@@ -68,14 +68,14 @@ class LoginProxy(threading.Thread):
 
             # player already has a profile
             if already_exists:
-                tries = 1
+                tries = 0
                 self.socket.send("Enter in your password:\n")
                 validated = False
                 while tries < 3 and not validated:
                     password = self.socket.recv(4096).strip()
                     self.socket.send("\n")
                     validated = persist.validate(username, password)
-                    if not validated:
+                    if not validated and tries < 2:
                         self.socket.send("Incorrect, try again:\n")
                         tries += 1
                 if not validated:
@@ -160,6 +160,18 @@ class LoginProxy(threading.Thread):
                 self.session.broadcastExclude(colorfy("[SERVER] " + player.name + " has joined the session.", "bright yellow"), player)
                 player.sendMessage(colorfy("[SERVER] You have joined the session.", "bright yellow"))
                 player.sendMessage(colorfy("[SERVER] You may type 'help' at any time for a list of commands.", 'bright green'))
+                
+                # Send them the newest changes as dictaded by the banner.txt file
+                try:
+                    banner_file = open("banner.txt")
+                    banner = banner_file.read()
+                    if banner:
+                        player.sendMessage(colorfy("*"*80, "bright yellow"))
+                        player.sendMessage(wrap(banner))
+                        player.sendMessage(colorfy("*"*80, "bright yellow"))
+                        banner_file.close()
+                except IOError:
+                    pass
         except:
             if DEBUG:
                 exc_type, exc_value, exc_traceback = sys.exc_info()

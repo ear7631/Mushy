@@ -1,5 +1,5 @@
 import random
-from colorer import colorfy
+from mushyutils import colorfy
 
 class DiceException(Exception):
     __slots__ = ("msg")
