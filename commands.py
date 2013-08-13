@@ -541,13 +541,16 @@ def emote(args):
         >> Smoke drifts upwards from a pipe held between ;'s lips.'
 
 
-    Alternatively, as a shorthand, you may start an emote with the ";" or "*"
-    token (with no space).
+    If no semicolon is found, your name will be stuck at the start:
+        emote yawns lazily.
+        >> Eitan yawns lazily.
+
+
+    Alternatively, as a shorthand, you may start an emote with the ";" token
+    (with no space).
 
     example:
         ;laughs heartedly
-        or
-        *laughs heartedly
         >> Eitan laughs heartedly.
     """
 
@@ -558,9 +561,10 @@ def emote(args):
     rest = args.full[len(args.name + " "):]
 
     if not ';' in args.full:
-        return False
+        rest = args.actor.name + " " + rest
+    else:
+        rest = rest.replace(';', args.actor.name)
 
-    rest = rest.replace(';', args.actor.name)
     args.actor.session.broadcast(colorfy(marking + rest, "dark gray"))
     return True
 
