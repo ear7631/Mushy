@@ -10,8 +10,6 @@ import commandparser
 
 from mushyutils import colorfy, wrap
 
-DEBUG = False
-
 
 class LoginProxy(threading.Thread):
 
@@ -173,12 +171,11 @@ class LoginProxy(threading.Thread):
                 except IOError:
                     pass
         except:
-            if DEBUG:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                traceback.print_exception(exc_type, exc_value, exc_traceback, limit=None, file=sys.stdout)
-                self.running = False
-                self.socket.close()
-                print "Server: Client connection closed. Exception during login."
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            traceback.print_exception(exc_type, exc_value, exc_traceback, limit=None, file=sys.stdout)
+            self.running = False
+            self.socket.close()
+            print "Server: Client connection closed. Exception during login."
         finally:
             if self in self.proxy_pool:
                 self.proxy_pool.remove(self)
@@ -239,7 +236,4 @@ def main():
 
 
 if __name__ == '__main__':
-    global DEBUG
-    if "--DEBUG" in sys.argv:
-        DEBUG = True
     main()
