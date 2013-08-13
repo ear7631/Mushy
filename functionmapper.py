@@ -61,7 +61,7 @@ def shorthandHandler(args):
     if len(args.full) < 2:
         return args
 
-    if args.name[0] in ('*', ';'):
+    if args.name[0] in (';'):
         new_name = "emote"
         new_tokens = ["emote", ";", args.tokens[0][1:]] + args.tokens[1:]
         new_full = "emote ; " + args.full[1:]
@@ -77,7 +77,7 @@ def shorthandHandler(args):
         newargs = CommandArgs(name=new_name, tokens=new_tokens, full=new_full, actor=args.actor)
         return newargs
 
-    elif args.name[0] == "%":
+    elif args.name[0] == "*":
         new_name = "ooc"
         new_tokens = ["ooc", args.tokens[0][1:]] + args.tokens[1:]
         new_full = "ooc " + args.full[1:]
@@ -101,10 +101,10 @@ def shorthandHandler(args):
         newargs = CommandArgs(name=new_name, tokens=new_tokens, full=new_full, actor=args.actor)
         return newargs
 
-    elif args.name[0] == "@":
+    elif "@" in args.name:
         new_name = "display"
-        new_tokens = ["display", "-c", args.tokens[0][1:]] + args.tokens[1:]
-        new_full = "display -c " + args.full[1:]
+        new_tokens = ["display"] + args.tokens
+        new_full = "display " + args.full
 
         newargs = CommandArgs(name=new_name, tokens=new_tokens, full=new_full, actor=args.actor)
         return newargs

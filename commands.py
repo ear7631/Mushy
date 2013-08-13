@@ -751,34 +751,39 @@ def mask(args):
 
 def display(args):
     """
-    Display text in a color of your choosing without any "tags". Basically, use
-    this as an immersion tool for typing descriptions.
+    Display text in a color of your choosing without any "tags". Basically,
+    use this as an immersion tool for typing descriptions.
 
     The DM may want to display text to only a particular player, and not want
     the rest of the group to be aware OOCly, allowing for better roleplay.
 
-    syntax: display [-c color] [-t target] <text>
-            color - the color which you want the text to display in
-            target - the target of the text
-            text - the text to display
+    syntax: display [identifier] <text>
+    
+    You may display things in a color, to a specific target, or both. It is
+    sufficient to supply the name of the color or target. If both are
+    specified, the syntax becomes:
 
-    To view a list of colors, type "colors".
+    color@target
+
+    To view a list of colors, type "colors". If the supplied color does not
+    exist, the default is used. If the dual-identifier form is used, a target
+    must be specified. The keyword "all" may be specified as well.
 
     example:
-        display -c BRED The flame licks at the prisoner's cheek.
+        display bred The flame licks at the prisoner's cheek.
         >> \033[1;31mThe flame licks at the prisoner's cheek.\033[0m
 
-        display -c YELLOW -t Justin Spiritual voices wail in your mind...
+        display yellow@justin Spiritual voices wail in your mind...
         >> \033[0;33mSpiritual voices wail in your mind...\033[0m
 
 
-    Alternatively, as a shorthand, you may display text using the "@" token
-    (no space). By doing this, the first argument is the color itself, and
-    no target is specified.
+    Alternatively, as a shorthand, having the "@" symbol in the command name
+    is sufficient for sending the display command. Both a color and a target
+    must be specified.
 
     example:
-        @RED Blood trickles down the victim's nose.
-        >> \033[0;31mBlood trickles down the victim's nose.\033[0m
+        red@all Blood trickles down your nose.
+        >> \033[0;31mBlood trickles down your nose.\033[0m
     """
 
     if len(args.tokens) < 2:
@@ -786,34 +791,25 @@ def display(args):
 
     color = "default"
     target = None
-    if args.tokens[1] == '-c':
-        if len(args.tokens) < 4:
-            return False
-
-        color = args.tokens[2].lower()
-        if not color in swatch:
-            return False
-
-        rest = args.full[len(args.tokens[0] + " " + args.tokens[1] + " " + args.tokens[2] + " "):]
-
-        if args.tokens[3] == '-t':
-            if len(args.tokens) < 6:
-                return False
-            target_name = args.tokens[4]
-            if target_name not in args.actor.session:
-                return False
-            target = args.actor.session.getEntity(target_name)
-            rest = rest[len(args.tokens[3] + " " + args.tokens[4] + " "):]
-    elif args.tokens[1] == '-t':
-        if len(args.tokens) < 4:
-            return False
-        target_name = args.tokens[2]
-        if target_name not in args.actor.session:
-            return False
-        target = args.actor.session.getEntity(target_name)
-        rest = args.full[len(args.tokens[0] + " " + args.tokens[1] + " " + args.tokens[2] + " "):]
+    rest = args.full[len(args.tokens[0]) + 1:]
+    if '@' not in args.tokens[1]:
+        # Single token, either a color or an entity
+        if args.tokens[1] in args.actor.session:
+            target = args.actor.session.getEntity(args.tokens[1])
+            rest = rest[len(args.tokens[1]) + 1:]
+        elif args.tokens[1].lower() in swatch:
+            color = args.tokens[1].lower()
+            rest = rest[len(args.tokens[1]) + 1:]
     else:
-        rest = args.full[len(args.tokens[0] + " "):]
+        params = args.tokens[1].split("@")
+        rest = rest[len(args.tokens[1]) + 1:]
+        if params[0].lower() in swatch:
+            color = params[0].lower()
+        if params[1] in args.actor.session:
+            target = args.actor.session.getEntity(params[1])
+        elif params[1].lower() != "all":
+            args.actor.sendMessage("There is no person named " + params[1] + ".")
+            return True
 
     rest = colorfy(rest, color)
 
