@@ -4,12 +4,12 @@ import threading
 import time
 import socket
 import commandparser
-
+from mushyutils import wrap
 
 class Entity(object):
     __slots__ = ("proxy", "name", "session", "dm", "status", "tallies",
                  "bags", "facade", "tallies_persist", "bags_persist",
-                 "languages", "aliases", "hcode", "salt", "mask")
+                 "languages", "aliases", "hcode", "salt", "mask", "settings", "test")
 
     def __init__(self, name="", hcode=None, salt=None, proxy=None, session=None):
         self.proxy = proxy
@@ -20,23 +20,25 @@ class Entity(object):
         self.dm = False
         self.mask = None
         self.status = ""
-
         self.tallies = {}
         self.bags = {}
         self.facade = None
-
         self.tallies_persist = []
         self.bags_persist = []
-
         self.hcode = hcode
         self.salt = salt
-
         self.languages = []
         self.aliases = {}
+        self.settings = {
+            "cols": 0,
+            "saywrap": False
+        }
 
     def sendMessage(self, message):
         if(self.proxy is not None):
             try:
+                if self.settings["cols"] != 0:
+                    message = wrap(message, cols=self.settings["cols"])
                 self.proxy.socket.send(message + "\n")
             except:
                 print "Server: Exception thrown while sending " + self.name + " a message."

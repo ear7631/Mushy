@@ -8,7 +8,7 @@ import persist
 import editor
 import dice
 
-from mushyutils import swatch, colorfy
+from mushyutils import swatch, colorfy, wrap
 
 
 CommandArgs = namedtuple.namedtuple('CommandArgs', 'name tokens full actor')
@@ -120,6 +120,44 @@ def alias(args):
     return True
 
 
+def configure(args):
+    """
+    Players have several things they can customize for output. Players may
+    configure these settings by using the "configure" command.
+
+    syntax: configure <setting> [value]
+
+    Below are a list of configurable options:
+        wrap <number>  - number of columns per line, 0 = unwrapped (default:)
+        saywrap        - wraps say output, toggle (default: off)
+    """
+    if len(args.tokens) < 2:
+        return False
+
+    setting = args.tokens[1]
+
+    if setting in ("wrap", "cols"):
+        try:
+            if len(args.tokens) < 3:
+                args.actor.sendMessage("Usage: configure wrap <number>")
+                return True
+            args.actor.settings["cols"] = int(args.tokens[2])
+            args.actor.sendMessage("Lines will now wrap at " + args.tokens[2] + " characters.")
+        except Exception:
+            args.actor.sendMessage("Value must be a number (0 for unwrapped).")
+    elif setting == "saywrap":
+        args.actor.settings["saywrap"] = not args.actor.settings["saywrap"]
+        if args.actor.settings["saywrap"]:
+            args.actor.sendMessage("Turned say wrapping " + colorfy("ON", "green"))
+        else:
+            args.actor.sendMessage("Turned say wrapping " + colorfy("OFF", "green"))
+    else:
+        args.actor.sendMessage("That is not a valid setting. Check help settings for more details.")
+
+    persist.saveEntity(args.actor)
+    return True
+
+
 def language(args):
     """
     Players may speak in a variety of different languages, so long as
@@ -203,6 +241,8 @@ def help(args):
 
     syntax: help <subject>
             subject - the subject or command which you want to check for help
+
+    Known bug: Doesn't always play nice with column wrapping.
     """
     # This would normally be circular, but this is an exceptional case
     import functionmapper
@@ -315,48 +355,54 @@ def _speak(args, second_tense, third_tense, speak_color):
     if lang is not None:
         color_lang = colorfy(lang, "green")
 
+    # A tricky runtime decoration of Entity.sendMessage, which wraps depending on settings
+    def sendMessage(target, text):
+        if target.settings["saywrap"]:
+            text = wrap(text, cols=60, indent="    ")
+        target.sendMessage(text)
+
     # Say stuff to a target
     if target_entity is not None:
         for e in args.actor.session:
             # in a language
             if lang is not None:
                 if e == args.actor:
-                    args.actor.sendMessage(colorfy('You ' + second_tense + ' to ' + target_entity.name + ' in ' + color_lang + ', "' + full + '"', speak_color))
+                    sendMessage(e, colorfy('You ' + second_tense + ' to ' + target_entity.name + ' in ' + color_lang + ', "' + full + '"', speak_color))
                 elif e == target_entity:
                     if lang in target_entity.languages:
-                        target_entity.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' to you in ' + color_lang + ', "' + full + '"', speak_color))
+                        sendMessage(e, colorfy(args.actor.name + ' ' + third_tense + ' to you in ' + color_lang + ', "' + full + '"', speak_color))
                     else:
-                        target_entity.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' something to you in ' + color_lang + '.', speak_color))
+                        e.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' something to you in ' + color_lang + '.', speak_color))
                 else:
                     if lang in e.languages:
-                        e.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' to ' + target_entity.name + ' in ' + color_lang + ', "' + full + '"', speak_color))
+                        sendMessage(e, colorfy(args.actor.name + ' ' + third_tense + ' to ' + target_entity.name + ' in ' + color_lang + ', "' + full + '"', speak_color))
                     else:
                         e.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' something to ' + target_entity.name + ' in ' + color_lang + '.', speak_color))
             # common
             else:
                 if e == args.actor:
-                    args.actor.sendMessage(colorfy('You ' + second_tense + ' to ' + target_entity.name + ', "' + full + '"', speak_color))
+                    sendMessage(e, colorfy('You ' + second_tense + ' to ' + target_entity.name + ', "' + full + '"', speak_color))
                 elif e == target_entity:
-                    target_entity.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' to you, "' + full + '"', speak_color))
+                    sendMessage(e, colorfy(args.actor.name + ' ' + third_tense + ' to you, "' + full + '"', speak_color))
                 else:
-                    e.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' to ' + target_entity.name + ', "' + full + '"', speak_color))
+                    sendMessage(e, colorfy(args.actor.name + ' ' + third_tense + ' to ' + target_entity.name + ', "' + full + '"', speak_color))
     # Say stuff to everyone
     else:
         for e in args.actor.session:
             # in a language
             if lang is not None:
                 if e == args.actor:
-                    e.sendMessage(colorfy('You ' + second_tense + ' in ' + color_lang + ', "' + full + '"', speak_color))
+                    sendMessage(e, colorfy('You ' + second_tense + ' in ' + color_lang + ', "' + full + '"', speak_color))
                 elif lang in e.languages:
-                    e.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' in ' + color_lang + ', "' + full + '"', speak_color))
+                    sendMessage(e, colorfy(args.actor.name + ' ' + third_tense + ' in ' + color_lang + ', "' + full + '"', speak_color))
                 else:
                     e.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' something in ' + color_lang + '.', speak_color))
             # common
             else:
                 if e == args.actor:
-                    e.sendMessage(colorfy('You ' + second_tense + ', "' + full + '"', speak_color))
+                    sendMessage(e, colorfy('You ' + second_tense + ', "' + full + '"', speak_color))
                 else:
-                    e.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ', "' + full + '"', speak_color))
+                    sendMessage(e, colorfy(args.actor.name + ' ' + third_tense + ', "' + full + '"', speak_color))
 
     return True
 

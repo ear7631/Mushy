@@ -239,6 +239,7 @@ def main():
 
 
 if __name__ == '__main__':
+    global DEBUG
     if "--DEBUG" in sys.argv:
         DEBUG = True
     main()
