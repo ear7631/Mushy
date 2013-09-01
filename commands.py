@@ -726,7 +726,7 @@ def mask(args):
         newargs = CommandArgs("mask", ["mask", "clear"], "mask clear", args.actor)
         args = newargs
 
-    if len(args.tokens) == 2:
+    elif len(args.tokens) == 2:
         if args.tokens[1] in ("clear", "reset", "remove"):
             args.actor.mask = None
             args.actor.sendMessage("You take off your mask.")
@@ -737,9 +737,12 @@ def mask(args):
             args.actor.sendMessage("You put on a " + colorfy(huskname, "green") + " mask.")
         return True
 
-    if not args.actor.dm:
+    elif not args.actor.dm:
         args.actor.sendMessage("Whoa there... This is a DM power! Bad!")
         return True
+
+    else:
+    	return False
 
     new_full = args.full[len(args.tokens[0] + " " + args.tokens[1] + " "):]
     new_tokens = new_full.split(" ")
