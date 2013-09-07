@@ -733,6 +733,7 @@ def mask(args):
         else:
             huskname = args.tokens[1][0].upper() + args.tokens[1][1:]
             husk = entity.Entity(name=huskname, session=args.actor.session)
+            husk.languages = args.actor.languages
             args.actor.mask = husk
             args.actor.sendMessage("You put on a " + colorfy(huskname, "green") + " mask.")
         return True
@@ -752,6 +753,7 @@ def mask(args):
         return True
 
     husk = entity.Entity(name=args.tokens[1][0].upper() + args.tokens[1][1:], session=args.actor.session)
+    husk.languages = args.actor.languages
     commandparser.CommandParser().parseLine(new_full, husk)
     return True
 
