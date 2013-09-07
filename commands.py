@@ -307,7 +307,7 @@ def _speak(args, second_tense, third_tense, speak_color):
     color_lang = None
 
     # CASE 1: Match on SAY IN
-    if rest_tokens[0] == 'in' and len(rest_tokens) >= 3:
+    if rest_tokens[0].lower() == 'in' and len(rest_tokens) >= 3:
         lang = rest_tokens[1].lower()
 
         if lang in args.actor.languages:
@@ -318,14 +318,14 @@ def _speak(args, second_tense, third_tense, speak_color):
             lang = None
 
         # see if there's a target in here
-        if len(rest_tokens) >= 3 and rest_tokens[0] == 'to':
+        if len(rest_tokens) >= 3 and rest_tokens[0].lower() == 'to':
             target_entity = args.actor.session.getEntity(rest_tokens[1])
             if target_entity is not None:
                 full = full[len(rest_tokens[0]) + len(rest_tokens[1]) + 2:]
                 rest_tokens = rest_tokens[2:]
 
     # CASE 2: Match on SAY TO
-    elif len(rest_tokens) >= 3 and rest_tokens[0] == 'to':
+    elif len(rest_tokens) >= 3 and rest_tokens[0].lower() == 'to':
         target_entity = args.actor.session.getEntity(rest_tokens[1])
 
         if target_entity is not None:
@@ -333,7 +333,7 @@ def _speak(args, second_tense, third_tense, speak_color):
             rest_tokens = rest_tokens[2:]
 
         # Check for language
-        if len(rest_tokens) >= 3 and rest_tokens[0] == 'in':
+        if len(rest_tokens) >= 3 and rest_tokens[0].lower() == 'in':
             lang = rest_tokens[1].lower()
 
             if lang in args.actor.languages:
