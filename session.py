@@ -23,8 +23,13 @@ class Session(object):
     def getEntity(self, username):
         username = username.lower()
         if username in self.connections:
+            if self.connections[username].spectator:
+                return None
             return self.connections[username]
         return None
+
+    def getAllEntities(self):
+        return self.connections.values()
 
     def broadcast(self, message):
         for connection in self.connections.values():
@@ -45,4 +50,4 @@ class Session(object):
         return key in self.connections
 
     def __iter__(self):
-        return iter(self.connections.values())
+        return iter(filter(lambda e: not e.spectator, self.connections.values()))

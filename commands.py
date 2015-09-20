@@ -27,6 +27,16 @@ actor - being object who used the command
 # These functions need to be identified for the bypass flag
 INPUT_BLOCK = set()
 MASKABLE = set()
+SPECTATORABLE = set()
+
+
+def spectatorable(func):
+    """
+    Decorate functions that cannot be masked.
+    """
+    if func not in SPECTATORABLE:
+        SPECTATORABLE.add(func)
+    return func
 
 
 def maskable(func):
@@ -120,6 +130,7 @@ def alias(args):
     return True
 
 
+@spectatorable
 def configure(args):
     """
     Players have several things they can customize for output. Players may
@@ -235,6 +246,7 @@ def language(args):
     return True
 
 
+@spectatorable
 def help(args):
     """
     Check these helpfiles for something.
@@ -363,18 +375,18 @@ def _speak(args, second_tense, third_tense, speak_color):
 
     # Say stuff to a target
     if target_entity is not None:
-        for e in args.actor.session:
+        for e in args.actor.session.getAllEntities():
             # in a language
             if lang is not None:
                 if e == args.actor:
                     sendMessage(e, colorfy('You ' + second_tense + ' to ' + target_entity.name + ' in ' + color_lang + ', "' + full + '"', speak_color))
                 elif e == target_entity:
-                    if lang in target_entity.languages:
+                    if lang in target_entity.languages or e.spectator:
                         sendMessage(e, colorfy(args.actor.name + ' ' + third_tense + ' to you in ' + color_lang + ', "' + full + '"', speak_color))
                     else:
                         e.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' something to you in ' + color_lang + '.', speak_color))
                 else:
-                    if lang in e.languages:
+                    if lang in e.languages or e.spectator:
                         sendMessage(e, colorfy(args.actor.name + ' ' + third_tense + ' to ' + target_entity.name + ' in ' + color_lang + ', "' + full + '"', speak_color))
                     else:
                         e.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' something to ' + target_entity.name + ' in ' + color_lang + '.', speak_color))
@@ -388,12 +400,12 @@ def _speak(args, second_tense, third_tense, speak_color):
                     sendMessage(e, colorfy(args.actor.name + ' ' + third_tense + ' to ' + target_entity.name + ', "' + full + '"', speak_color))
     # Say stuff to everyone
     else:
-        for e in args.actor.session:
+        for e in args.actor.session.getAllEntities():
             # in a language
             if lang is not None:
                 if e == args.actor:
                     sendMessage(e, colorfy('You ' + second_tense + ' in ' + color_lang + ', "' + full + '"', speak_color))
-                elif lang in e.languages:
+                elif lang in e.languages or e.spectator:
                     sendMessage(e, colorfy(args.actor.name + ' ' + third_tense + ' in ' + color_lang + ', "' + full + '"', speak_color))
                 else:
                     e.sendMessage(colorfy(args.actor.name + ' ' + third_tense + ' something in ' + color_lang + '.', speak_color))
@@ -492,22 +504,26 @@ def pm(args):
     return True
 
 
+@spectatorable
 def who(args):
     """
     See who is connected to the MUSH server.
 
     syntax: who
     """
-    msg = colorfy("Currently connected players:\n", "bright blue")
-    for e in args.actor.session:
-        name = colorfy(e.name, "bright blue")
+    msg = colorfy("Currently connected players:\n", "cyan")
+    for e in args.actor.session.getAllEntities():
+        name = colorfy(e.name, "cyan")
         if e.dm:
             name = name + colorfy(" (DM)", "bright red")
+        elif e.spectator:
+            name = name + colorfy(" (S)", "bright yellow")
         msg = msg + "    " + name + "\n"
     args.actor.sendMessage(msg)
     return True
 
 
+@spectatorable
 def logout(args):
     """
     Logs you out of the game.
@@ -584,7 +600,7 @@ def ooc(args):
     "%" token (no space).
 
     example:
-        %If you keep metagaming, I'm going to rip you a new one!
+        %If you keep metagaming, I'm going to kill you!
         >> [OOC DM_Eitan]: If you keep metagaming, I'm going to kill you!
     """
 
@@ -687,6 +703,13 @@ def roll(args):
         if args.tokens[0] == 'droll':
             args.actor.session.broadcastExclude(colorfy("The DM makes a hidden roll.", "bred"), args.actor)
 
+    return True
+
+
+def fudge(args):
+    result, out = dice.fudge()
+    msg = args.actor.name + " rolls the dice: " + out + "    (total = " + result + ")"    
+    args.actor.session.broadcast(msg)
     return True
 
 
@@ -876,6 +899,7 @@ def status(args):
     return True
 
 
+@spectatorable
 def glance(args):
     """
     Glance at another player to see their set status.
@@ -898,6 +922,7 @@ def glance(args):
     return True
 
 
+@spectatorable
 def examine(args):
     """
     Examines another player's profile.
@@ -920,6 +945,7 @@ def examine(args):
     return True
 
 
+@spectatorable
 def colors(args):
     """
     Displays a list of the colors available for use in certain commands.
@@ -1085,6 +1111,7 @@ def wipe(args):
     return True
 
 
+@spectatorable
 def look(args):
     """
     Allows a player to look at a scene, or a particular painted object.
@@ -1124,6 +1151,7 @@ def tally(args):
         Add/Sub:        tally add/sub <tag> [amount]
         Change:         tally change <tag> <value>
         Check:          tally check [tag]
+        Peek:           tally peek <entity> [tag]
         Create:         tally create <tag> [initial]
         Destroy:        tally destroy <tag>
         Share:          tally share <tag> [entity]
@@ -1234,6 +1262,35 @@ def tally(args):
                                              colorfy(tag, 'white') + ": " + colorfy(str(args.actor.tallies[tag]), 'cyan') + "]")
         else:
             args.actor.sendMessage("Tally " + tag + " does not exist.")
+
+    elif subcommand == 'peek':
+        if not args.actor.dm:
+            return False
+        target = args.actor.session.getEntity(tag)
+        if not target:
+            return False
+        tag = ''
+        if len(tokens) > 3:
+            tag = tokens[3]
+        if tag == '':
+            keys = target.tallies.keys()
+            if len(keys) == 0:
+                args.actor.sendMessage(target.name + "has no tallies.")
+                return True
+
+            args.actor.sendMessage("------" + target.name.upper() + "'S TALLIES------")
+            sorted(keys)
+            perma_mark = "(" + colorfy("saved", "green") + ")"
+            for key in keys:
+                s = "    [" + colorfy(key, 'white') + ": " + colorfy(str(target.tallies[key]), 'cyan') + "]"
+                if key in target.tallies_persist:
+                    s = s + " " + perma_mark
+                args.actor.sendMessage(s)
+        elif tag in target.tallies:
+            args.actor.sendMessage("The value of " + target.name + "'s tally " + tag + " is " + colorfy(str(args.actor.tallies[tag]), 'cyan') + ".")
+        else:
+            args.actor.sendMessage(target.name + "'s tally " + tag + " does not exist.")
+
 
     elif subcommand == 'save':
         args.actor.tallies_persist.append(tag)
@@ -1593,6 +1650,7 @@ def initiative(args):
     return True
 
 
+@spectatorable
 def save(args):
     """
     Saves all persistent stuff.
@@ -1601,6 +1659,75 @@ def save(args):
     """
     persist.saveEntity(args.actor)
     args.actor.sendMessage("Profile saved.")
+    return True
+
+
+def aspect(args):
+    """
+    DMs can set aspects on players. Anyone can check aspects.
+
+    syntax: aspect <subcommand>
+
+    List of subcommands and syntax:
+
+        Add/Remove:     aspect add/remove <player> <aspect>
+        Check:          aspect check <player>
+
+
+    You may also check all the aspects for all players by typing "aspects".
+    """
+
+    if len(args.tokens) < 4:
+        if len(args.tokens) == 1:
+            if args.tokens[0] != 'aspects':
+                return False
+        elif len(args.tokens) == 3:
+            if args.tokens[1] != 'check':
+                return False
+        else:
+            return False
+
+    tokens = args.tokens
+
+    # bags substitution
+    if args.tokens[0] == 'aspects':
+        tokens = ['aspect', 'check', 'all']
+
+    subcommand = tokens[1]
+    if subcommand not in ('check', 'add', 'remove'):
+        return False
+
+    target = args.actor.session.getEntity(tokens[2])
+    if subcommand == 'check':
+        if not target and tokens[2] == 'all':
+            s = ""
+            for e in args.actor.session:
+                s += e.name + " has the following aspects:\n    " + "\n    ".join(e.aspects) + "\n\n"
+            args.actor.sendMessage(s)
+        elif target:
+            args.actor.sendMessage(target.name + " has the following aspects:\n    " + "\n    ".join(target.aspects))
+        else:
+            return False
+            
+    elif subcommand in ('add', 'remove'):
+        aspect = " ".join(tokens[3:]).strip()
+        if not target or aspect == '':
+            return False
+
+        index = -1
+        for i in range(len(target.aspects)):
+            a = target.aspects[i]
+            if a.strip.lower() == aspect.lower():
+                index = i
+
+        if subcommand == 'add' and index == -1:
+            target.aspects.append(aspect);
+            args.actor.session.broadcast(target.name + " " + colorfy("acquires", "bgreen") + " the aspect: " + colorfy(aspect, "yellow") + ".")
+        elif subcommand == 'remove' and index != -1:
+            args.actor.session.broadcast(target.name + " " + colorfy("loses", "bred") + " the aspect: " + colorfy(aspect, "yellow") + ".")
+            del target.aspects[index]
+        else:
+            return False
     return True
 
 

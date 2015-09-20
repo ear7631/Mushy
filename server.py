@@ -136,6 +136,15 @@ class LoginProxy(threading.Thread):
 
                 player.dm = dm
 
+                self.socket.send("Are you a spectator (y if yes)?\n")
+                choice = self.socket.recv(4096).strip()
+                self.socket.send("\n")
+                spectator = False
+                if choice.lower() == 'y':
+                    spectator = True
+
+                player.spectator = spectator
+
                 self.socket.send("Profile created. Saving...\n")
                 persist.saveEntity(player)
 

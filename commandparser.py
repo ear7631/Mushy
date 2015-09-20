@@ -104,6 +104,11 @@ class Dispatcher(threading.Thread):
                 new_args = CommandArgs(name=new_tokens[0], tokens=new_tokens, full=new_line, actor=args.actor)
                 self.queue.append(new_args)
                 self.lock.set()
+            # check spectator
+            elif (args.actor.spectator and 
+                    args.name not in commands.commandFunctions and 
+                    functionmapper.commandFunctions[args.name] not in commands.SPECTATORABLE):
+                args.actor.sendMessage("Only actual players can use that command. Check help spectator for more info.")
             else:
                 args.actor.sendMessage("What?")
 

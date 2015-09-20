@@ -9,7 +9,8 @@ from mushyutils import wrap
 class Entity(object):
     __slots__ = ("proxy", "name", "session", "dm", "status", "tallies",
                  "bags", "facade", "tallies_persist", "bags_persist",
-                 "languages", "aliases", "hcode", "salt", "mask", "settings", "test")
+                 "languages", "aliases", "hcode", "salt", "mask", "settings", "test",
+                 "spectator", "aspects")
 
     def __init__(self, name="", hcode=None, salt=None, proxy=None, session=None):
         self.proxy = proxy
@@ -18,6 +19,7 @@ class Entity(object):
         self.name = name
         self.session = session
         self.dm = False
+        self.spectator = False
         self.mask = None
         self.status = ""
         self.tallies = {}
@@ -29,6 +31,7 @@ class Entity(object):
         self.salt = salt
         self.languages = []
         self.aliases = {}
+        self.aspects = []
         self.settings = {
             "cols": 0,
             "saywrap": False

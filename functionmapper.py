@@ -51,6 +51,7 @@ commandFunctions["zap"] = commands.zap
 commandFunctions["init"] = commands.initiative
 commandFunctions["initiative"] = commands.initiative
 commandFunctions["tick"] = commands.initiative
+commandFunctions["fudge"] = commands.fudge
 
 
 

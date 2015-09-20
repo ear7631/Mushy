@@ -33,6 +33,20 @@ def resolve(token):
     return r, msg
 
 
+def fudge():
+    results = [random.randint(-1, 1) for _ in range(4)]
+    chars = {-1: '-', 0: '=', 1: '+'}
+    tones = {-1: 'bred', 0: 'default', 1: 'bgreen'}
+    result = sum(results)
+    if result > 0:
+        result = colorfy(str(result), "bgreen")
+    elif result == 0:
+        result = colorfy(str(result), "default")
+    else:
+        result = colorfy(str(result), "bred")
+    return result, " ".join([colorfy(chars[x], tones[x]) for x in results])
+
+
 def parse(text):
     tokens = format(text)
     result, msg = resolve(tokens[0])
